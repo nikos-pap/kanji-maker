@@ -1,0 +1,13 @@
+{
+  "name": "kanji-maker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline custom Japanese glyph editor with Word, font and editable library exports.",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "build": "node scripts/build.cjs",
+    "prestart": "npm run build",
+    "start": "node scripts/serve.cjs",
+    "test": "node scripts/build.cjs --check"
+  }
+}

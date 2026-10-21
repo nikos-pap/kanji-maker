@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Kanji Maker</title>
+  <style>/* BUILD:CSS */</style>
+</head>
+<body>
+  <header>
+    <div class="brand"><span class="brand-mark" aria-hidden="true">字</span><div><h1>Kanji Maker</h1><p>Make a character of your own.</p></div></div>
+    <button id="help" class="quiet">How it works</button>
+  </header>
+  <main>
+    <section class="workspace" aria-label="Character editor">
+      <form id="characterForm" class="character-bar">
+        <label for="character">Start with a character</label>
+        <input id="character" value="長" autocomplete="off" spellcheck="false" aria-label="Base character">
+        <button id="loadCharacter" type="submit" class="primary">Load character</button>
+        <button id="chooseFont" type="button" class="quiet">Choose font…</button>
+        <span id="fontName">Included Japanese serif</span>
+        <input type="file" id="fontFile" accept=".ttf,.otf,.woff,.woff2" hidden>
+      </form>
+      <div class="editor-toolbar">
+        <div class="tool-group" role="group" aria-label="Drawing tool">
+          <button type="button" data-tool="points" aria-pressed="false" title="Edit outline points (N)"><span class="tool-icon" aria-hidden="true">◇</span>Points</button>
+          <button type="button" data-tool="erase" aria-pressed="true" title="Erase (E)"><span class="tool-icon" aria-hidden="true">▱</span>Erase</button>
+          <button type="button" data-tool="cut" aria-pressed="false" title="Erase a rectangle (R)"><span class="tool-icon" aria-hidden="true">▧</span>Cut area</button>
+          <button type="button" data-tool="polygon" aria-pressed="false" title="Cut a precise polygon (P)"><span class="tool-icon" aria-hidden="true">⬠</span>Polygon cut</button>
+          <button type="button" data-tool="draw" aria-pressed="false" title="Draw a stroke (D)"><span class="tool-icon" aria-hidden="true">╱</span>Draw</button>
+          <button type="button" data-tool="line" aria-pressed="false" title="Draw a straight stroke (L)"><span class="tool-icon" aria-hidden="true">↗</span>Line</button>
+          <button type="button" data-tool="pan" aria-pressed="false" title="Pan (H), Space+drag, or middle mouse button"><span class="tool-icon" aria-hidden="true">✥</span>Pan</button>
+        </div>
+        <label class="size-control">Size <input id="brushSize" type="range" min="1" max="160" value="45"><input id="brushValue" type="number" min="1" max="160" step="0.5" value="45" aria-label="Exact brush size"></label>
+        <div class="history-controls"><button id="undo" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button><button id="redo" title="Redo (Ctrl+Shift+Z)" aria-label="Redo">↷</button><button id="reset" class="quiet">Reset</button></div>
+      </div>
+      <div id="pointControls" class="precision-bar" hidden>
+        <span id="pointDescription">Select an outline or a point.</span>
+        <label>X <input id="pointX" type="number" min="0" max="1000" step="0.1" disabled></label>
+        <label>Y <input id="pointY" type="number" min="0" max="1000" step="0.1" disabled></label>
+        <button id="removeContour" disabled>Remove outline</button>
+      </div>
+      <div id="polygonControls" class="precision-bar" hidden><span>Click corners around the area to remove.</span><button id="applyPolygon" class="primary" disabled>Apply cut</button><button id="cancelPolygon" disabled>Cancel</button></div>
+      <div class="view-toolbar" aria-label="Canvas view controls"><span>Scroll to zoom · Space + drag to pan</span><div class="zoom-controls"><button id="zoomOut" title="Zoom out" aria-label="Zoom out">−</button><select id="zoomLevel" aria-label="Canvas zoom"><option value="1">100%</option><option value="1.5">150%</option><option value="2">200%</option><option value="3">300%</option><option value="4">400%</option><option value="8">800%</option><option value="16">1600%</option></select><button id="zoomIn" title="Zoom in" aria-label="Zoom in">+</button><button id="zoomFit" title="Show the whole character (0)">Fit</button></div></div>
+      <div class="canvas-surround">
+        <div id="canvasFrame" class="canvas-frame">
+          <svg id="canvas" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Kanji drawing canvas. Drag to edit the character." tabindex="0">
+            <defs><pattern id="checks" width="40" height="40" patternUnits="userSpaceOnUse"><rect width="40" height="40" fill="#fff"/><path d="M0 0H20V20H0ZM20 20H40V40H20Z" fill="#f3f4f3"/></pattern></defs>
+            <rect width="1000" height="1000" fill="url(#checks)"/>
+            <g id="grid" pointer-events="none"><path d="M500 0V1000M0 500H1000"/><path d="M250 0V1000M750 0V1000M0 250H1000M0 750H1000" class="grid-minor"/></g>
+            <g id="artwork"></g>
+            <g id="outlineOverlay"></g>
+            <g id="polygonOverlay" pointer-events="none"></g>
+            <g id="pointerOverlay" pointer-events="none"><circle id="brushCursor" style="display:none"/></g>
+          </svg>
+        </div>
+      </div>
+      <footer class="canvas-footer"><p id="toolHint">Drag to erase. The checkerboard shows transparent areas.</p><label><input id="showGrid" type="checkbox" checked> Guides</label><span id="editCount">Original character</span></footer>
+    </section>
+    <aside>
+      <section class="preview-panel"><h2>In text</h2><div id="textPreview" class="text-preview" aria-label="Custom character preview"></div><p class="small">Your character at reading size.</p></section>
+      <section class="export-panel"><h2>Current character</h2><label for="glyphName">Name</label><input id="glyphName" value="長 variant" maxlength="80" autocomplete="off"><button id="saveGlyph" class="primary full">Save to library</button><div class="export-buttons"><button id="exportSvg">SVG</button><button id="exportPng">PNG</button><button id="exportFont" title="Single-character font at U+E000">Font</button><button id="exportCharacterProject" title="Reopen this character in Kanji Maker">App file</button></div><button id="copyCharacter" class="text-button" title="Copies U+E000 for the separate single-character font">Copy single-font character</button><p id="copyHint" class="small" hidden>This character code uses the separate single-character font.</p><div class="copy-document"><label for="copyDocumentMode">Paste into another document</label><select id="copyDocumentMode"><option value="text">Editable text · library font</option><option value="image">Transparent image</option></select><button id="copyDocument" class="full">Copy for document</button><p id="copyDocumentHint" class="small">Save to the library to copy editable text. Image copies work immediately.</p></div></section>
+      <section class="library-panel"><div class="section-heading"><h2>Your library</h2><button id="importProject" class="text-button">Import app file</button></div><div id="library"></div><div class="library-exports"><button id="exportLibraryWord" class="primary full">Word document (.docx)</button><button id="exportLibraryFont" class="full">Library font (.ttf)</button><button id="exportProject" class="quiet full">App file (.json)</button></div><p class="small">Exports include all saved characters. App files preserve editable outlines and character codes.</p><p id="libraryFontName" class="small"></p><input type="file" id="projectFile" accept=".json" hidden></section>
+    </aside>
+  </main>
+  <div id="status" role="status" aria-live="polite">Loading the included font…</div>
+  <dialog id="helpDialog"><form method="dialog"><h2>A few simple tools</h2><p>Enter a character and load it. Erase removes parts of its shape; Cut area removes a rectangle. Draw and Line add strokes. Use Undo whenever you need it.</p><p>Scroll over the canvas to zoom around the pointer, or use the zoom buttons. Hold Space and drag, use the middle mouse button, or choose Pan to move around. Fit shows the whole character. Pinch with two fingers on a touch screen.</p><p>Points edits the original font outline. Click a square point to select it; circles are curve handles. Drag to reshape, enter exact X/Y coordinates, or use arrow keys to move by 1 unit (Shift: 10, Alt: 0.1). Hold Shift while dragging to constrain movement horizontally or vertically. Drag a highlighted outline to move that entire connected shape. Remove outline deletes the selected contour; connected strokes may belong to the same contour.</p><p>Polygon cut removes an area with precise straight edges: click its corners, then Apply cut, Enter, or double-click to finish. Escape cancels an unfinished cut.</p><p>Hold Shift while drawing a line to snap its angle. Shortcuts: N, E, R, P, D, L, H switch tools; 0 fits; Ctrl+Z undoes; Ctrl+Shift+Z redoes.</p><p>Save characters to your library, then export the whole library as a Word document with its font embedded, one reusable font file, or an editable app file. Each saved character has its own code; adding or deleting entries does not change existing codes. Importing into an empty library restores the original font identity and codes; importing into an existing library adds copies with fresh codes.</p><p>Copy for document can copy formatted editable text or a transparent image. Text copies use the library font: install it once in the receiving application, and update it after adding or editing characters. Keep source formatting when pasting into Word. Images need no custom font, but behave as pictures. The Word document export embeds the font automatically.</p><p>Individual SVG, PNG, font and app-file exports remain available for the current character. Its separate single-character font uses U+E000. SVG keeps source curves and transparent cuts; fonts preserve native quadratic outlines where possible and trace composed cuts/strokes at high resolution.</p><p id="fontCredit">The included source font is derived from Noto Serif CJK, available under the SIL Open Font License. Its licence is included with font downloads.</p><button class="primary">Got it</button></form></dialog>
+  <dialog id="confirmDialog"><form method="dialog"><h2 id="confirmTitle">Replace this character?</h2><p id="confirmText">Your current changes have not been saved to the library.</p><div class="dialog-actions"><button value="cancel">Cancel</button><button value="confirm" class="primary">Continue</button></div></form></dialog>
+  <!-- BUILD:VENDORLICENSE -->
+  <script>/* BUILD:FONTKIT */</script>
+  <script>const INCLUDED_FONT = "/* BUILD:FONT */"; const INCLUDED_FONT_LICENSE = "/* BUILD:LICENSE */";</script>
+  <script>/* BUILD:APP */</script>
+</body>
+</html>
