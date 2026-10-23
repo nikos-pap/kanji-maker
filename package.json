@@ -3,11 +3,32 @@
   "version": "1.0.0",
   "private": true,
   "description": "Offline custom Japanese glyph editor with Word, font and editable library exports.",
-  "engines": { "node": ">=18" },
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "dependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  },
   "scripts": {
-    "build": "node scripts/build.cjs",
-    "prestart": "npm run build",
-    "start": "node scripts/serve.cjs",
-    "test": "node scripts/build.cjs --check"
+    "start": "vite --host 127.0.0.1 --port 4173",
+    "dev": "vite --host 127.0.0.1 --port 4173",
+    "typecheck": "tsc --noEmit",
+    "build": "npm run typecheck && node scripts/build.mjs",
+    "preview": "vite preview --host 127.0.0.1 --port 4173",
+    "test": "vitest run",
+    "test:e2e": "playwright test"
   }
 }

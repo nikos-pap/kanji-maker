@@ -1,60 +1,135 @@
 # Kanji Maker
 
-A standalone Japanese glyph editor. Start from a font character, change its
-outline, and save your variants in a browser library. Export editable Word
+A React and TypeScript Japanese glyph editor, built with Vite. Start from a font
+character, edit its outline, and save variants in a browser library. Export Word
 documents, reusable fonts, app backups, SVGs and PNGs.
 
-Open **kanji_maker.html** directly in a browser. It includes the editor and its
-Japanese font, so it works offline without an installation or server.
+## Develop
 
-## Editing the app
+Use Node.js 22.12 or newer.
 
-This repository is independent of the Japanese N5 editor. All required sources
-and assets are included here:
+```sh
+npm install
+npm start
+```
 
-| File | Purpose |
-| --- | --- |
-| `src/index.html` | Page layout and help text |
-| `src/style.css` | Appearance and responsive layout |
-| `src/app.js` | Editing, library, clipboard and interaction |
-| `src/exports.js` | TrueType font and Word document generation |
-| `assets/fonts/` | Included Japanese font and its licence |
-| `assets/vendor/` | Bundled fontkit and its licence |
-| `scripts/build.cjs` | Builds the self-contained page |
-| `kanji_maker.html` | Generated page; commit this after building |
-| `index.html` | GitHub Pages entry; opens the generated page |
+Open http://127.0.0.1:4173. Changes to React components, TypeScript and CSS update
+in the browser during development.
 
-Use Node.js 18 or newer. There are no packages to install.
+| Source                                 | Purpose                                                        |
+| -------------------------------------- | -------------------------------------------------------------- |
+| `src/App.tsx`                          | React page, toolbar, library, export controls and dialogs      |
+| `src/components/EditorCanvas.tsx`      | React SVG canvas, pointer gestures, outline points and zoom    |
+| `src/components/Glyph.tsx`             | Shared React glyph rendering for canvas, previews and exports  |
+| `src/hooks/useEditor.ts`               | Editor state, undo/redo, persistence, fonts and export actions |
+| `src/lib/geometry.ts`                  | Outline parsing, coordinates and point movement                |
+| `src/lib/storage.ts`                   | Backup validation, character codes and library compatibility   |
+| `src/lib/exports.ts`                   | Typed TrueType and embedded-font Word generation               |
+| `src/lib/font.tsx`, `src/lib/trace.ts` | Font loading, rasterization and contour tracing                |
+| `src/types.ts`                         | Shared TypeScript models                                       |
+| `src/style.css`                        | Appearance and responsive layout                               |
+| `index.html`                           | Vite entry that mounts the React application                   |
+| `scripts/build.mjs`, `vite.config.ts`  | Production build and GitHub Pages output                       |
 
-1. Edit the files in `src/`.
-2. Run `npm run build` from this folder.
-3. Open `kanji_maker.html`, or run `npm start` for a preview at
-   **http://127.0.0.1:4173**. Stop the preview with Ctrl+C.
-4. Run `npm test` to check the generated file matches its sources.
-5. Commit the changed sources **and** `kanji_maker.html`, then push.
+## Repository layout and Git
 
-`npm start` rebuilds before starting. To use another port, set `PORT`.
-The GitHub check catches a generated page that was not rebuilt. It checks build
-consistency; it does not replace testing the editor in a browser.
+```text
+src/
+  components/       React canvas and glyph components
+  hooks/            Editor state and actions
+  lib/              Geometry, persistence, font and export utilities
+  App.tsx           Application layout and controls
+  main.tsx          React entry point
+  style.css         Styles
+  types.ts          Shared models
+assets/
+  fonts/            Included font and its licence
+  licenses/         Third-party notices
+tests/
+  unit/             Vitest tests
+  e2e/              Playwright browser tests
+  helpers/          Static server for testing the built app
+scripts/            Build tooling
+docs/               Generated site published by GitHub Pages
+.run/               Shared WebStorm run configurations
+.idea/              Portable WebStorm project metadata
+```
 
-Do not edit the generated HTML by hand: the next build replaces it. The build
-normalizes line endings so Windows and GitHub generate the same output.
+Commit the source, assets, tests, configuration, lockfile and rebuilt `docs/`.
+The shared WebStorm files are explicitly allowed in `.gitignore`; personal IDE
+state, dependencies, scratch files, environment files and test reports are ignored.
+Keep personal library backups outside the repository or in the ignored `tmp/` folder.
 
-## GitHub Pages
+## WebStorm
 
-In the repository on GitHub, open **Settings → Pages**. Choose **Deploy from a
-branch**, then **main** and **/ (root)**, and Save. If your default branch has a
-different name, choose that branch instead.
+Shared run configurations are included in `.run/`. Open the repository folder
+in WebStorm and choose a configuration from the Run/Debug dropdown:
 
-The expected address for this repository is
-**https://nikos-pap.github.io/kanji-maker/** once Pages is enabled and deployed.
-The entry page uses a relative link, so it also works in other repository paths
-and on custom domains. The existing `kanji_maker.html` address continues to work.
-After setup, pushing an updated generated page updates the site.
+| Configuration        | Action                                                      |
+| -------------------- | ----------------------------------------------------------- |
+| Development          | Starts Vite at http://127.0.0.1:4173 with hot reload        |
+| Build GitHub Pages   | Type-checks and builds `docs/`                              |
+| Preview GitHub Pages | Builds first, then serves `docs/` at http://127.0.0.1:4173  |
+| Typecheck            | Runs the strict TypeScript checks                           |
+| Unit Tests           | Runs Vitest                                                 |
+| Browser Tests        | Builds first, then runs Playwright against the built folder |
 
-Pages serves static files. It does not sync or store your personal character
-library. Repository contents are accessible with the published site; keep
-personal library exports outside the repository unless you intend to share them.
+They use the project's Node.js runtime and relative project paths. Select
+Node.js 22.12 or newer in WebStorm's JavaScript Runtime settings and run
+`npm install` once. Stop Development before starting Preview GitHub Pages,
+because both use port 4173. Browser Tests use port 4174 and Microsoft Edge locally.
+See [WebStorm's npm configuration documentation](https://www.jetbrains.com/help/webstorm/run-debug-configuration-npm.html)
+for runtime and debugger settings.
+
+## Build the GitHub Pages folder
+
+```sh
+npm run build
+```
+
+The script type-checks the app and creates **`docs/`**, containing `index.html`,
+compiled JavaScript, CSS, the included Japanese font, licence notices and
+`.nojekyll`. Everything needed to run the deployed app is inside that folder.
+The build replaces its previous contents; edit the sources in `src/` and rebuild.
+
+For GitHub Pages:
+
+1. Run `npm run build`.
+2. Commit and push the source changes, `package-lock.json`, and the entire `docs/` folder.
+3. In the repository's **Settings → Pages**, choose **Deploy from a branch**.
+4. Select **main** (or your default branch), choose **/docs**, and save.
+
+The repository site will be at https://nikos-pap.github.io/kanji-maker/.
+Run `npm run build` and commit the updated `docs/` after each source change.
+The build uses relative asset URLs, so you can also publish the contents of
+`docs/` on another static host or under another repository name.
+
+To check the output locally:
+
+```sh
+npm run preview
+```
+
+Open http://127.0.0.1:4173. This serves the built `docs/` folder. Use an HTTP server
+or GitHub Pages to run it; do not double-click the built HTML. No backend or
+external CDN is required, and the font is included locally.
+
+## Checks
+
+```sh
+npm run typecheck
+npm test
+npm run build
+npm run test:e2e
+```
+
+The browser tests serve only `docs/` under `/kanji-maker/`, exercising repository
+paths, drawing, point edits, undo/redo, library persistence, imports and exports.
+They use installed Microsoft Edge locally and Playwright Chromium on CI. If Edge
+is unavailable, install it or use `CI=true` with `npx playwright install chromium`.
+
+GitHub Pages does not sync or store your personal character library. Keep personal
+app-file backups outside the repository unless you intend to share them.
 
 ## Your library and backups
 
@@ -105,5 +180,4 @@ Ctrl+Shift+Z redoes. Escape cancels an unfinished cut or point drag.
 
 The included font is derived from Noto Serif CJK, © 2017–2024 Adobe, under the
 SIL Open Font License in `assets/fonts/OFL.txt`. Fontkit's licence is in
-`assets/vendor/fontkit-LICENSE.txt`. Both notices are bundled into the generated
-page. Uploaded fonts remain subject to their own licences.
+`assets/licenses/fontkit-LICENSE.txt`. Both notices are copied into docs/licenses/ by the build. Uploaded fonts remain subject to their own licences.

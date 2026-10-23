@@ -1,2 +1,9 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Font files must never receive text/line-ending conversion.
+*.ttf binary
+
+# Publish generated output without reviewing minified bundles as source diffs.
+docs/** linguist-generated=true
+docs/assets/* -diff -whitespace

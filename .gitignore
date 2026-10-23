@@ -1,5 +1,28 @@
+# Dependencies and local scratch files
 node_modules/
-tmp/
+/tmp/
+/.cache/
+/.vite/
 *.log
 .DS_Store
 Thumbs.db
+
+# Test output and compiler caches
+/test-results/
+/playwright-report/
+/coverage/
+*.tsbuildinfo
+
+# Local environment files; example files can be shared
+.env
+.env.*
+!.env.example
+
+# Share portable WebStorm project files and .run/ configurations only
+/.idea/*
+!/.idea/.gitignore
+!/.idea/kanji-maker.iml
+!/.idea/modules.xml
+!/.idea/vcs.xml
+
+# docs/ is intentionally tracked: GitHub Pages publishes this build folder.

@@ -1,0 +1,83 @@
+import type { GlyphModel } from "../types";
+import { pathFor } from "../lib/geometry";
+
+/** The same declarative SVG is used for editing, previews and exports. */
+export function Glyph({
+  model,
+  prefix,
+  title = false,
+}: {
+  model: GlyphModel;
+  prefix: string;
+  title?: boolean;
+}) {
+  let shape = <path d={model.basePath} fill="#000" />;
+  const masks = [];
+  for (const [i, op] of model.operations.entries()) {
+    if (op.kind === "erase" || op.kind === "cut" || op.kind === "polygon") {
+      const id = `${prefix}-erase-${i}`,
+        a = op.points[0],
+        b = op.points[op.points.length - 1];
+      masks.push(
+        <mask
+          key={id}
+          id={id}
+          maskUnits="userSpaceOnUse"
+          x="0"
+          y="0"
+          width="1000"
+          height="1000"
+          style={{ maskType: "luminance" }}
+        >
+          <rect width="1000" height="1000" fill="#fff" />
+          {op.kind === "cut" ? (
+            <rect
+              x={Math.min(a[0], b[0])}
+              y={Math.min(a[1], b[1])}
+              width={Math.abs(b[0] - a[0])}
+              height={Math.abs(b[1] - a[1])}
+              fill="#000"
+            />
+          ) : op.kind === "polygon" ? (
+            <path d={pathFor(op.points) + "Z"} fill="#000" />
+          ) : (
+            <path
+              d={pathFor(op.points)}
+              fill="none"
+              stroke="#000"
+              strokeWidth={op.width}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          )}
+        </mask>,
+      );
+      shape = <g mask={`url(#${id})`}>{shape}</g>;
+    } else
+      shape = (
+        <g>
+          {shape}
+          <path
+            d={pathFor(op.points, op.kind === "line")}
+            fill="none"
+            stroke="#000"
+            strokeWidth={op.width}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
+      );
+  }
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 1000 1000"
+      width="1000"
+      height="1000"
+    >
+      {title && <title>{model.name}</title>}
+      <defs>{masks}</defs>
+      {shape}
+    </svg>
+  );
+}
