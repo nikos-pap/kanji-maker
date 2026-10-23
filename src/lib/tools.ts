@@ -21,12 +21,6 @@ export const tools: {
     hint: "Drag a line; Shift snaps the angle",
   },
   {
-    value: "pan",
-    label: "Pan",
-    key: "H",
-    hint: "Drag to pan; Space + drag works in any tool",
-  },
-  {
     value: "points",
     label: "Points",
     key: "N",

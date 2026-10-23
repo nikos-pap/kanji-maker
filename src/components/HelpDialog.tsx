@@ -11,9 +11,9 @@ export function HelpDialog({ close }: { close: () => void }) {
           you need it.
         </p>
         <p>
-          Scroll over the canvas to zoom around the pointer. Hold Space and
-          drag, use the middle mouse button, or choose Pan. Fit shows the whole
-          character. Pinch with two fingers on a touch screen.
+          Scroll over the canvas to zoom around the pointer. Hold Space and drag
+          or use the middle mouse button. Fit shows the whole character. Pinch
+          with two fingers on a touch screen.
         </p>
         <p>
           Points edits the original font outline. Squares are outline points;
@@ -28,8 +28,8 @@ export function HelpDialog({ close }: { close: () => void }) {
           Erase and Line. Size controls its width. Shift snaps line angles.
         </p>
         <p>
-          Shortcuts: D/E/R/L/H/N select tools, 0 fits, Ctrl+Z undoes,
-          Ctrl+Shift+Z redoes.
+          Shortcuts: D/E/R/L/N select tools, 0 fits, Ctrl+Z undoes, Ctrl+Shift+Z
+          redoes.
         </p>
         <p>
           Save characters to your library, then export a Word document with its

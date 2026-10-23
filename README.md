@@ -64,16 +64,20 @@ Keep personal library backups outside the repository or in the ignored `tmp/` fo
 ## Phone layout
 
 Phones use a viewport-sized canvas view without a scrolling page. The top bar
-opens character selection and the library, then provides undo/redo, Save, Import
-and Export. Save uses the current name; open Export to change the name or copy
-the character. Character/library and export controls open in dismissible panels.
+has separate Character, Font and Library actions, plus undo/redo, Save, Import
+and Export. Library sits immediately before Save. Save uses the current name;
+open Export to change the name or copy the character. Each action has its own panel.
 Only a panel's contents scroll when needed.
 
-Tap the floating tool button, then choose Draw, Erase, Cut area, Line, Pan or
-Points. The same picker includes a Round/Square tip toggle and closes after a
-choice. The vertical slider adjusts brush size; the horizontal slider adjusts
-zoom. Fit and Guides sit beside zoom. Pinch zoom and two-finger gestures use the
-same drawing canvas as desktop. Compact landscape uses a two-column tool picker.
+Tap the floating tool button, then choose Draw, Erase, Cut area, Line or Points.
+The same picker includes a Round/Square tip toggle and closes after a choice.
+Two arc dials at the bottom adjust brush size and zoom: drag along an arc, or
+focus it and use arrow keys. Fit and Guides sit at the upper right. Pan is a
+two-finger gesture rather than a tool. Compact landscape uses a two-column picker.
+
+The drawing viewport fills the available width and height. The checkerboard square
+marks the printable character area without clipping the editor artwork; zoom can
+use the surrounding space. Exports remain cropped to the printable square.
 
 The phone components are in `src/components/mobile/`; `src/mobile.css` controls
 the phone layout. `src/hooks/useCompactLayout.ts` selects the layout while the
@@ -189,19 +193,19 @@ Use **Points** for anchors and curve handles; move a connected contour by draggi
 its boundary. Enter X/Y coordinates or nudge with arrows (Shift: 10 units,
 Alt: 0.1). A connected outline may contain several strokes.
 
-The tool order is **Draw, Erase, Cut area, Line, Pan, Points**. Draw, Erase and
+The tool order is **Draw, Erase, Cut area, Line, Points**. Draw, Erase and
 Line share the **Round / Square** brush setting and Size. Square uses an
 axis-aligned square tip, including on diagonal strokes. Cut area shows a live
 rectangle while dragging; release to apply, or press Escape to cancel. Brush
 shapes are retained in saved characters, backups and exports. Older backups,
 including existing polygon cuts, remain readable.
 
-Guides, brush settings, zoom and Fit are grouped above the canvas. Usage hints
+On desktop, Guides, brush settings, zoom and Fit are grouped above the canvas. Usage hints
 are available in button tooltips and Help.
 
-Wheel zoom follows the pointer. Space+drag, middle mouse drag or Pan moves the
+Wheel zoom follows the pointer. Space+drag or middle mouse drag moves the
 canvas; touch supports pinch zoom. Fit shows the whole character. Only the canvas
-zooms. Shortcuts: D/E/R/L/H/N select tools, 0 fits, Ctrl+Z undoes,
+zooms. Shortcuts: D/E/R/L/N select tools, 0 fits, Ctrl+Z undoes,
 Ctrl+Shift+Z redoes. Escape cancels an unfinished cut or point drag.
 
 ## Third-party licences

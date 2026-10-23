@@ -69,7 +69,11 @@ export async function outlineForModel(
   if (
     !model.operations.length &&
     source?.length &&
-    source.every((c) => c.every((p) => p.cmd !== "C"))
+    source.every((c) =>
+      c.every(
+        (p) => p.cmd !== "C" && p.values.every((n) => n >= 0 && n <= 1000),
+      ),
+    )
   ) {
     return source.map((c) =>
       c.flatMap((p) => {

@@ -34,7 +34,6 @@ test("drawing, undo, redo, visible area cuts, points and zoom", async ({
     "Erase",
     "Cut area",
     "Line",
-    "Pan",
     "Points",
   ]);
   await expect(page.locator('[data-tool="polygon"]')).toHaveCount(0);

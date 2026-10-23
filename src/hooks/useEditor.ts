@@ -338,7 +338,6 @@ export function useEditor() {
           r: "cut",
           d: "draw",
           l: "line",
-          h: "pan",
         };
         if (shortcuts[key]) {
           e.preventDefault();

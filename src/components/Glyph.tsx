@@ -7,11 +7,19 @@ export function Glyph({
   model,
   prefix,
   title = false,
+  unbounded = false,
+  viewport,
 }: {
   model: GlyphModel;
   prefix: string;
   title?: boolean;
+  unbounded?: boolean;
+  viewport?: { x: number; y: number; width: number; height: number };
 }) {
+  const maskArea =
+    unbounded && viewport
+      ? viewport
+      : { x: 0, y: 0, width: 1000, height: 1000 };
   let shape = <path d={model.basePath} fill="#000" />;
   const masks = [];
   for (const [i, op] of model.operations.entries()) {
@@ -24,13 +32,19 @@ export function Glyph({
           key={id}
           id={id}
           maskUnits="userSpaceOnUse"
-          x="0"
-          y="0"
-          width="1000"
-          height="1000"
+          x={maskArea.x}
+          y={maskArea.y}
+          width={maskArea.width}
+          height={maskArea.height}
           style={{ maskType: "luminance" }}
         >
-          <rect width="1000" height="1000" fill="#fff" />
+          <rect
+            x={maskArea.x}
+            y={maskArea.y}
+            width={maskArea.width}
+            height={maskArea.height}
+            fill="#fff"
+          />
           {op.kind === "cut" ? (
             <rect
               x={Math.min(a[0], b[0])}
@@ -61,6 +75,7 @@ export function Glyph({
       viewBox="0 0 1000 1000"
       width="1000"
       height="1000"
+      overflow={unbounded ? "visible" : "hidden"}
     >
       {title && <title>{model.name}</title>}
       <defs>{masks}</defs>

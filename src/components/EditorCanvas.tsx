@@ -21,6 +21,7 @@ import {
 } from "../lib/geometry";
 import { Glyph } from "./Glyph";
 import { OutlineOverlay } from "./OutlineOverlay";
+import { anchoredCamera, canvasViewport, zoomCamera } from "../lib/viewport";
 
 type Drag = { pointer: number; start: Point } & (
   | { type: "pan"; camera: Camera }
@@ -69,7 +70,7 @@ export function EditorCanvas(props: Props) {
   const [cursor, setCursor] = useState<Point | null>(null);
   const [space, setSpace] = useState(false),
     [panning, setPanning] = useState(false);
-  const [width, setWidth] = useState(620);
+  const [bounds, setBounds] = useState({ width: 620, height: 620 });
   const spaceHeld = useRef(false),
     touches = useRef(new Map<number, Point>());
   const pinch = useRef<{
@@ -79,38 +80,28 @@ export function EditorCanvas(props: Props) {
   } | null>(null);
   const outline = useMemo(() => parseOutline(model.basePath), [model.basePath]),
     point = activePoint(outline, selection);
-  const unit = 1000 / (camera.zoom * width),
-    size = 1000 / camera.zoom;
+  const view = canvasViewport(camera, bounds),
+    unit = view.unit;
   const publish = (next: GlyphModel) => {
     liveModel.current = next;
     onChange(next);
   };
   const setView = useCallback(
     (next: Camera) => {
-      const size = 1000 / next.zoom;
-      onCameraChange({
-        ...next,
-        x: clamp(next.x, 0, 1000 - size),
-        y: clamp(next.y, 0, 1000 - size),
-      });
+      onCameraChange(next);
       setCursor(null);
     },
     [onCameraChange],
   );
   function zoomTo(value: number, anchor?: Point) {
     if (drag.current) return;
-    const zoom = clamp(value, 1, 16),
-      focus = anchor ||
-        (tool === "points" && point) || [
-          camera.x + 500 / camera.zoom,
-          camera.y + 500 / camera.zoom,
-        ];
-    const ratio = camera.zoom / zoom;
-    setView({
-      zoom,
-      x: focus[0] - (focus[0] - camera.x) * ratio,
-      y: focus[1] - (focus[1] - camera.y) * ratio,
-    });
+    setView(
+      zoomCamera(
+        camera,
+        value,
+        anchor || (tool === "points" && point) || undefined,
+      ),
+    );
   }
   const position = (
     event: { clientX: number; clientY: number },
@@ -162,8 +153,11 @@ export function EditorCanvas(props: Props) {
     setCursor(null);
   }, [tool]);
   useEffect(() => {
-    const observer = new ResizeObserver((entries) =>
-      setWidth(entries[0].contentRect.width || 620),
+    const observer = new ResizeObserver(([entry]) =>
+      setBounds({
+        width: entry.contentRect.width || 620,
+        height: entry.contentRect.height || 620,
+      }),
     );
     observer.observe(svg.current!);
     return () => observer.disconnect();
@@ -270,7 +264,7 @@ export function EditorCanvas(props: Props) {
     if (drag.current) return;
     e.preventDefault();
     e.currentTarget.focus();
-    if (tool === "pan" || spaceHeld.current || e.button === 1) {
+    if (spaceHeld.current || e.button === 1) {
       e.currentTarget.setPointerCapture(e.pointerId);
       onGesture(true);
       setPanning(true);
@@ -309,6 +303,9 @@ export function EditorCanvas(props: Props) {
       };
       return;
     }
+    const start = position(e, false);
+    if (start[0] < 0 || start[0] > 1000 || start[1] < 0 || start[1] > 1000)
+      return;
     e.currentTarget.setPointerCapture(e.pointerId);
     onGesture(true);
     drag.current = {
@@ -338,25 +335,21 @@ export function EditorCanvas(props: Props) {
         rect = svg.current!.getBoundingClientRect(),
         start = pinch.current;
       const zoom = clamp(
-          (start.zoom * Math.hypot(a[0] - b[0], a[1] - b[1])) / start.distance,
-          1,
-          16,
-        ),
-        size = 1000 / zoom;
-      setView({
-        zoom,
-        x:
-          start.anchor[0] -
-          (((a[0] + b[0]) / 2 - rect.left) / rect.width) * size,
-        y:
-          start.anchor[1] -
-          (((a[1] + b[1]) / 2 - rect.top) / rect.height) * size,
-      });
+        (start.zoom * Math.hypot(a[0] - b[0], a[1] - b[1])) / start.distance,
+        1,
+        16,
+      );
+      setView(
+        anchoredCamera(zoom, bounds, start.anchor, [
+          ((a[0] + b[0]) / 2 - rect.left) / rect.width,
+          ((a[1] + b[1]) / 2 - rect.top) / rect.height,
+        ]),
+      );
       return;
     }
     const current = drag.current;
     if (current?.type === "pan" && current.pointer === e.pointerId) {
-      const unit = 1000 / (current.camera.zoom * width);
+      const unit = canvasViewport(current.camera, bounds).unit;
       setView({
         ...current.camera,
         x: current.camera.x - (e.clientX - current.start[0]) * unit,
@@ -382,10 +375,12 @@ export function EditorCanvas(props: Props) {
       });
       return;
     }
+    const hover = position(e, false);
     setCursor(
       ["erase", "draw", "line"].includes(tool) &&
         !spaceHeld.current &&
-        e.pointerType !== "touch"
+        e.pointerType !== "touch" &&
+        hover.every((n) => n >= 0 && n <= 1000)
         ? position(e)
         : null,
     );
@@ -499,7 +494,7 @@ export function EditorCanvas(props: Props) {
           <svg
             ref={svg}
             id="canvas"
-            viewBox={`${camera.x} ${camera.y} ${size} ${size}`}
+            viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`}
             xmlns="http://www.w3.org/2000/svg"
             role="img"
             aria-label="Kanji drawing canvas. Drag to edit the character."
@@ -524,7 +519,25 @@ export function EditorCanvas(props: Props) {
                 <path d="M0 0H20V20H0ZM20 20H40V40H20Z" fill="#f3f4f3" />
               </pattern>
             </defs>
-            <rect width="1000" height="1000" fill="url(#checks)" />
+            <rect
+              x={view.x}
+              y={view.y}
+              width={view.width}
+              height={view.height}
+              fill="#edf1eb"
+            />
+            <rect
+              id="printBounds"
+              width="1000"
+              height="1000"
+              fill="url(#checks)"
+              stroke="#a7b5aa"
+              strokeWidth="1"
+              vectorEffect="non-scaling-stroke"
+              pointerEvents="none"
+            >
+              <title>Printable character area</title>
+            </rect>
             {guides && (
               <g id="grid" pointerEvents="none">
                 <path d="M500 0V1000M0 500H1000" />
@@ -535,7 +548,7 @@ export function EditorCanvas(props: Props) {
               </g>
             )}
             <g id="artwork">
-              <Glyph model={model} prefix="edit" />
+              <Glyph model={model} prefix="edit" unbounded viewport={view} />
             </g>
             {tool === "points" && outline && (
               <OutlineOverlay

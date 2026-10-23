@@ -3,23 +3,34 @@ import type { Editor } from "../../hooks/useEditor";
 import { useCanvasView } from "../../hooks/useCanvasView";
 import { EditorCanvas } from "../EditorCanvas";
 import { CharacterForm } from "../CharacterForm";
+import { FontPicker } from "../FontPicker";
 import { LibraryPanel } from "../LibraryPanel";
 import { ExportPanel } from "../ExportPanel";
 import { Modal } from "../Modal";
 import { Icon } from "../Icon";
 import { MobileTopBar } from "./MobileTopBar";
 import { MobileTools } from "./MobileTools";
-import { MobileSliders } from "./MobileSliders";
+import { MobileDials } from "./MobileDials";
 
 export function MobileEditor({ editor: e }: { editor: Editor }) {
   const { camera, setCamera, zoomTo, fit } = useCanvasView(e.session);
-  const [sheet, setSheet] = useState<"characters" | "export" | null>(null);
+  const [sheet, setSheet] = useState<
+    "character" | "library" | "font" | "export" | null
+  >(null);
+  const sheetLabels = {
+    character: "Character",
+    library: "Library",
+    font: "Font",
+    export: "Export and copy",
+  };
   useEffect(() => setSheet(null), [e.session]);
   return (
     <main className="phone-screen" aria-label="Phone character editor">
       <MobileTopBar
         editor={e}
-        onCharacters={() => setSheet("characters")}
+        onCharacters={() => setSheet("character")}
+        onLibrary={() => setSheet("library")}
+        onFont={() => setSheet("font")}
         onExport={() => setSheet("export")}
       />
       <div className="phone-stage">
@@ -38,7 +49,7 @@ export function MobileEditor({ editor: e }: { editor: Editor }) {
           onGesture={e.onGesture}
           notify={e.notify}
         />
-        <MobileSliders
+        <MobileDials
           editor={e}
           zoom={camera.zoom}
           onZoom={zoomTo}
@@ -50,23 +61,19 @@ export function MobileEditor({ editor: e }: { editor: Editor }) {
         <Modal
           id="phonePanel"
           className="phone-sheet"
-          label={
-            sheet === "characters" ? "Character and library" : "Export and copy"
-          }
+          label={sheetLabels[sheet]}
           onDismiss={() => setSheet(null)}
         >
           <div className="phone-sheet-heading">
-            <h2>{sheet === "characters" ? "Character & library" : "Export"}</h2>
+            <h2>{sheetLabels[sheet]}</h2>
             <button aria-label="Close panel" onClick={() => setSheet(null)}>
               <Icon name="close" />
             </button>
           </div>
-          {sheet === "characters" ? (
-            <>
-              <CharacterForm editor={e} />
-              <LibraryPanel editor={e} />
-            </>
-          ) : (
+          {sheet === "character" && <CharacterForm editor={e} />}
+          {sheet === "library" && <LibraryPanel editor={e} />}
+          {sheet === "font" && <FontPicker editor={e} />}
+          {sheet === "export" && (
             <>
               <ExportPanel editor={e} />
               <div className="phone-sheet-secondary">

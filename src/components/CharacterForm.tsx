@@ -1,17 +1,10 @@
-import { useRef } from "react";
 import type { Editor } from "../hooks/useEditor";
 
 type CharacterFormState = Pick<
   Editor,
-  | "busy"
-  | "character"
-  | "setCharacter"
-  | "loadCharacter"
-  | "fontLabel"
-  | "chooseFont"
+  "busy" | "character" | "setCharacter" | "loadCharacter"
 >;
 export function CharacterForm({ editor: e }: { editor: CharacterFormState }) {
-  const fontInput = useRef<HTMLInputElement>(null);
   return (
     <form
       id="characterForm"
@@ -38,30 +31,6 @@ export function CharacterForm({ editor: e }: { editor: CharacterFormState }) {
       >
         Load
       </button>
-      <button
-        id="chooseFont"
-        type="button"
-        className="quiet"
-        disabled={e.busy}
-        onClick={() => fontInput.current?.click()}
-      >
-        Choose font…
-      </button>
-      <span id="fontName" title={e.fontLabel}>
-        {e.fontLabel}
-      </span>
-      <input
-        ref={fontInput}
-        type="file"
-        id="fontFile"
-        accept=".ttf,.otf,.woff,.woff2"
-        hidden
-        onChange={(event) => {
-          const file = event.currentTarget.files?.[0];
-          event.currentTarget.value = "";
-          if (file) void e.chooseFont(file);
-        }}
-      />
     </form>
   );
 }

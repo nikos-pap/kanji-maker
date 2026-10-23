@@ -30,7 +30,7 @@ body:has(.phone-screen) {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
+  width: clamp(32px, 9.5vw, 42px);
   height: 42px;
   padding: 0;
   border-color: transparent;
@@ -40,7 +40,7 @@ body:has(.phone-screen) {
   touch-action: manipulation;
 }
 .phone-topbar .phone-character {
-  width: 57px;
+  width: 48px;
   gap: 2px;
   border-color: var(--border);
   background: #f5f8f1;
@@ -74,21 +74,13 @@ body:has(.phone-screen) {
   background: #edf1eb;
 }
 .phone-stage .canvas-frame {
-  width: min(
-    100vw,
-    calc(100dvh - 56px - env(safe-area-inset-top) - env(safe-area-inset-bottom))
-  );
-  max-height: 100%;
-  aspect-ratio: 1;
-  height: auto;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  max-height: none;
   border: 0;
   border-radius: 0;
   box-shadow: none;
-}
-@supports (width: 1cqh) {
-  .phone-stage .canvas-frame {
-    width: min(100cqw, 100cqh);
-  }
 }
 .phone-stage #canvas:focus-visible {
   outline: none;
@@ -118,9 +110,6 @@ body:has(.phone-screen) {
   padding: 7px;
 }
 .phone-tools-toggle,
-.phone-guides,
-.phone-brush-slider,
-.phone-zoom-slider,
 .phone-tool-palette {
   border: 1px solid #d3dfd4;
   background: #fffffff0;
@@ -190,99 +179,6 @@ body:has(.phone-screen) {
 .phone-shape-choice {
   border-top: 1px solid var(--border);
 }
-.phone-brush-slider {
-  position: absolute;
-  top: 50%;
-  left: 10px;
-  transform: translateY(-50%);
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  width: 36px;
-  padding: 10px 3px 7px;
-  border-radius: 18px;
-  color: var(--accent);
-}
-.phone-brush-slider.is-disabled {
-  opacity: 0.45;
-}
-.phone-brush-slider input {
-  writing-mode: vertical-lr;
-  direction: rtl;
-  width: 26px;
-  height: 112px;
-  margin: 0;
-  accent-color: #628b77;
-}
-.phone-brush-slider output {
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
-}
-.phone-bottom-controls {
-  position: absolute;
-  bottom: calc(15px + env(safe-area-inset-bottom));
-  left: 10px;
-  right: 72px;
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-}
-.phone-guides {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  padding: 0;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.phone-guides[aria-pressed="true"] {
-  color: var(--accent);
-  background: #edf4e9ee;
-}
-.phone-zoom-slider {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 2px 5px 2px 10px;
-  height: 38px;
-  width: 240px;
-  max-width: 100%;
-  min-width: 0;
-  border-radius: 20px;
-  color: #567260;
-}
-.phone-zoom-slider > svg {
-  flex-shrink: 0;
-}
-.phone-zoom-slider input {
-  min-width: 0;
-  width: 100%;
-  height: 30px;
-  margin: 0;
-  accent-color: #628b77;
-}
-.phone-zoom-slider output {
-  min-width: 31px;
-  font-size: 10px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-.phone-zoom-slider button {
-  display: grid;
-  place-items: center;
-  border: 0;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: transparent;
-}
 dialog.phone-sheet {
   position: fixed;
   inset: auto 0 0;
@@ -315,8 +211,9 @@ dialog.phone-sheet {
 }
 .phone-sheet .character-bar {
   padding: 0 0 18px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 18px;
+  border: 0;
+  margin: 0;
+  padding: 0;
 }
 .phone-sheet #fontName {
   display: block;
@@ -339,17 +236,109 @@ dialog.phone-sheet {
   padding-top: 12px;
 }
 body:has(.phone-screen) #status {
-  bottom: calc(74px + env(safe-area-inset-bottom));
+  bottom: calc(110px + env(safe-area-inset-bottom));
   max-width: calc(100vw - 28px);
   pointer-events: none;
+}
+.phone-dials {
+  position: absolute;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  left: 10px;
+  width: min(260px, calc(100% - 76px));
+  display: flex;
+  gap: 8px;
+  z-index: 3;
+}
+.arc-dial {
+  flex: 1;
+  min-width: 0;
+  aspect-ratio: 120 / 88;
+  touch-action: none;
+  user-select: none;
+  border: 1px solid #d9e1d7;
+  border-radius: 16px;
+  color: var(--accent);
+  background: #ffffffe6;
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+}
+.arc-dial:focus-visible {
+  outline: 2px solid #91baa4;
+  outline-offset: 2px;
+}
+.arc-dial[aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: default;
+}
+.arc-dial > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.arc-track,
+.arc-progress {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+.arc-track {
+  stroke: #d5dfd4;
+}
+.arc-progress {
+  stroke: #4d7f66;
+}
+.arc-knob {
+  fill: #3e755c;
+  stroke: #fff;
+  stroke-width: 2;
+}
+.arc-value {
+  fill: currentColor;
+  font:
+    13px system-ui,
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.arc-label {
+  fill: #6d7d74;
+  font:
+    9px system-ui,
+    sans-serif;
+}
+.phone-view-actions {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 6px;
+  z-index: 3;
+}
+.phone-view-actions button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid #d3dfd4;
+  background: #fffffff0;
+  box-shadow: 0 2px 8px #18322412;
+}
+.phone-view-actions button[aria-pressed="true"] {
+  background: #edf4e9ee;
+  color: var(--accent);
+}
+.phone-stage:has(.precision-bar) .phone-view-actions {
+  top: 64px;
+}
+.phone-sheet .font-picker {
+  flex-direction: column;
+  align-items: stretch;
 }
 @media (max-height: 560px) {
   .phone-tool-palette {
     width: 252px;
     grid-template-columns: 1fr 1fr;
-  }
-  .phone-brush-slider input {
-    height: 84px;
   }
   dialog.phone-sheet {
     max-height: 95dvh;

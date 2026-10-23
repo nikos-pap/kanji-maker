@@ -1,6 +1,6 @@
 export type Point = [number, number];
 export type StrokeKind = "erase" | "cut" | "polygon" | "draw" | "line";
-export type Tool = Exclude<StrokeKind, "polygon"> | "points" | "pan";
+export type Tool = Exclude<StrokeKind, "polygon"> | "points";
 export type BrushShape = "round" | "square";
 export interface Operation {
   kind: StrokeKind;

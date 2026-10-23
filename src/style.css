@@ -182,6 +182,27 @@ main {
   padding: 18px 20px;
   flex-wrap: wrap;
 }
+.source-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 16px;
+}
+.source-controls .character-bar {
+  padding: 0;
+}
+.font-picker {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+}
+.font-picker #fontName {
+  margin-left: 0;
+}
 .character-bar label {
   font-weight: 600;
 }
@@ -283,14 +304,15 @@ main {
 }
 .canvas-surround {
   background: #e8ece5;
-  padding: 26px;
+  padding: 0;
   display: flex;
   justify-content: center;
   overflow: auto;
 }
 .canvas-frame {
-  width: min(100%, 620px);
-  aspect-ratio: 1;
+  width: 100%;
+  height: clamp(420px, 64dvh, 720px);
+  aspect-ratio: auto;
   box-shadow: 0 2px 9px #26342d21;
   border: 1px solid #cfd8ce;
   border-radius: 3px;
@@ -541,7 +563,6 @@ dialog p {
   font: inherit;
   font-variant-numeric: tabular-nums;
 }
-#canvas[data-mode="pan"],
 #canvas.space-pan {
   cursor: grab;
 }
@@ -602,11 +623,6 @@ dialog p {
   overflow: hidden;
 }
 
-@media (min-width: 1500px) {
-  .canvas-frame {
-    width: min(100%, 680px);
-  }
-}
 @media (max-width: 1080px) {
   main {
     grid-template-columns: minmax(0, 1fr) 235px;
@@ -622,9 +638,6 @@ dialog p {
   }
   .character-bar label {
     font-size: 12px;
-  }
-  .canvas-surround {
-    padding: 18px;
   }
   header {
     padding-inline: 18px;

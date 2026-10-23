@@ -5,7 +5,8 @@ export type IconName =
   | "erase"
   | "cut"
   | "line"
-  | "pan"
+  | "font"
+  | "library"
   | "points"
   | "round"
   | "square"
@@ -25,7 +26,9 @@ const paths: Record<Exclude<IconName, "round" | "square">, string> = {
     "m13 4 7 7a2 2 0 0 1 0 3l-6 6H8l-5-5a2 2 0 0 1 0-3l7-8a2 2 0 0 1 3 0ZM7 8l9 9M8 20h13",
   cut: "M7 3v14h14M3 7h14v14M4 4l1 1m14 14 1 1",
   line: "M5 19 19 5M3 17l4 4M17 3l4 4",
-  pan: "M8 12V5a1.5 1.5 0 0 1 3 0v6-8a1.5 1.5 0 0 1 3 0v8-6a1.5 1.5 0 0 1 3 0v6-3a1.5 1.5 0 0 1 3 0v7c0 5-2 7-6 7h-2c-2 0-3-1-4-3l-4-5a1.6 1.6 0 0 1 2-2l2 2",
+  font: "M4 20 12 4l8 16M7 14h10",
+  library:
+    "M12 5C9 3 5 3 2 4v16c3-1 7-1 10 1 3-2 7-2 10-1V4c-3-1-7-1-10 1Zm0 0v16M5 8h3m-3 4h3m8-4h3m-3 4h3",
   points:
     "M4 17c4-13 12-13 16 0M4 17V5m16 12V5M2 3h4v4H2ZM18 3h4v4h-4ZM2 15h4v4H2ZM18 15h4v4h-4Z",
   undo: "M8 4 3 9l5 5M3 9h11a6 6 0 0 1 0 12",

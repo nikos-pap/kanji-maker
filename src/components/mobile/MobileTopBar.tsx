@@ -2,19 +2,34 @@ import { useRef } from "react";
 import type { Editor } from "../../hooks/useEditor";
 import { Icon } from "../Icon";
 
-type Props = { editor: Editor; onCharacters: () => void; onExport: () => void };
-export function MobileTopBar({ editor: e, onCharacters, onExport }: Props) {
+type Props = {
+  editor: Editor;
+  onCharacters: () => void;
+  onLibrary: () => void;
+  onFont: () => void;
+  onExport: () => void;
+};
+export function MobileTopBar({
+  editor: e,
+  onCharacters,
+  onLibrary,
+  onFont,
+  onExport,
+}: Props) {
   const input = useRef<HTMLInputElement>(null);
   return (
     <div className="phone-topbar" role="toolbar" aria-label="Editor actions">
       <button
         className="phone-character"
-        aria-label="Choose character or open library"
-        title="Character and library"
+        aria-label="Choose character"
+        title="Character"
         onClick={onCharacters}
       >
         <span>{e.model.character || "字"}</span>
         <Icon name="chevron" width="12" height="12" />
+      </button>
+      <button aria-label="Choose font" title="Font" onClick={onFont}>
+        <Icon name="font" />
       </button>
       <div className="phone-history" role="group" aria-label="Edit history">
         <button
@@ -35,6 +50,9 @@ export function MobileTopBar({ editor: e, onCharacters, onExport }: Props) {
         </button>
       </div>
       <div className="phone-file-actions">
+        <button aria-label="Open library" title="Library" onClick={onLibrary}>
+          <Icon name="library" />
+        </button>
         <button
           aria-label="Save to library"
           title="Save"

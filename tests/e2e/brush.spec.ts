@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import type { Page } from "@playwright/test";
+import { canvasPoint } from "../helpers/canvas";
 
 async function exportedAlpha(page: Page, x: number, y: number) {
   const pending = page.waitForEvent("download");
@@ -58,22 +59,22 @@ test("square brush is shared by Draw, Erase and Line and survives save/reload", 
       },
     ],
   };
-  await page
-    .locator("#projectFile")
-    .setInputFiles({
-      name: "brush.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(backup)),
-    });
+  await page.locator("#projectFile").setInputFiles({
+    name: "brush.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(backup)),
+  });
   await page.locator(".library-load").click();
   await page.locator('[data-brush-shape="square"]').click();
   await page.locator("#brushValue").fill("100");
-  const box = (await page.locator("#canvas").boundingBox())!;
-  const move = (x: number, y: number) =>
-    page.mouse.move(box.x + box.width * x, box.y + box.height * y);
+  const center = await canvasPoint(page, 500, 500);
+  const move = async (x: number, y: number) => {
+    const p = await canvasPoint(page, x * 1000, y * 1000);
+    await page.mouse.move(p.x, p.y);
+  };
   await move(0.5, 0.5);
   await expect(page.locator("rect#brushCursor")).toBeVisible();
-  await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.5);
+  await page.mouse.click(center.x, center.y);
   expect(await exportedAlpha(page, 455, 455)).toBe(255);
   await page.locator('[data-tool="erase"]').click();
   await expect(page.locator('[data-brush-shape="square"]')).toHaveAttribute(

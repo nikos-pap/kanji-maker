@@ -45,8 +45,8 @@ test("phone canvas and controls fit the viewport in portrait and landscape", asy
     for (const selector of [
       ".phone-topbar",
       "#canvas",
-      ".phone-brush-slider",
-      ".phone-bottom-controls",
+      ".phone-dials",
+      ".phone-view-actions",
       "#phoneTools",
     ]) {
       const bounds = (await page.locator(selector).boundingBox())!;
@@ -61,7 +61,6 @@ test("phone canvas and controls fit the viewport in portrait and landscape", asy
       "Erase",
       "Cut area",
       "Line",
-      "Pan",
       "Points",
     ]);
     const palette = (await page.locator("#phoneToolPalette").boundingBox())!;
@@ -80,10 +79,10 @@ test("phone canvas and controls fit the viewport in portrait and landscape", asy
   await page.screenshot({ path: "tmp/phone-portrait.png" });
 });
 
-test("two-tap tools, brush shape, sliders and touch gestures edit without scrolling", async ({
+test("two-tap tools, brush shape, dials and touch gestures edit without scrolling", async ({
   page,
 }) => {
-  for (const tool of ["Erase", "Cut area", "Line", "Pan", "Points", "Draw"]) {
+  for (const tool of ["Erase", "Cut area", "Line", "Points", "Draw"]) {
     await page.locator("#phoneTools").click();
     await page.getByRole("button", { name: tool, exact: true }).click();
     await expect(page.locator("#phoneTools")).toHaveAttribute(
@@ -96,18 +95,42 @@ test("two-tap tools, brush shape, sliders and touch gestures edit without scroll
   await page.getByRole("switch", { name: "Square brush" }).click();
   await expect(page.locator("#phoneToolPalette")).toHaveCount(0);
   await page.getByRole("slider", { name: "Brush size", exact: true }).focus();
+  const dial = (await page
+    .getByRole("slider", { name: "Brush size", exact: true })
+    .boundingBox())!;
+  await page.mouse.move(
+    dial.x + (dial.width * 16) / 120,
+    dial.y + (dial.height * 62) / 88,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    dial.x + dial.width / 2,
+    dial.y + (dial.height * 18) / 88,
+    { steps: 8 },
+  );
+  await page.mouse.up();
+  const changedSize = Number(
+    await page
+      .getByRole("slider", { name: "Brush size", exact: true })
+      .getAttribute("aria-valuenow"),
+  );
+  expect(changedSize).toBeGreaterThan(75);
+  expect(changedSize).toBeLessThan(85);
   await page.keyboard.press("End");
   await expect(
     page.getByRole("slider", { name: "Brush size", exact: true }),
-  ).toHaveValue("160");
+  ).toHaveAttribute("aria-valuenow", "160");
   await page.getByRole("slider", { name: "Zoom", exact: true }).focus();
   await page.keyboard.press("End");
-  await expect(page.locator(".phone-zoom-slider output")).toHaveText("1600%");
+  await expect(
+    page.getByRole("slider", { name: "Zoom", exact: true }),
+  ).toHaveAttribute("aria-valuetext", "1600%");
   await page.getByRole("button", { name: "Fit canvas" }).click();
-  await expect(page.locator("#canvas")).toHaveAttribute(
-    "viewBox",
-    "0 0 1000 1000",
-  );
+  const fitted = (await page.locator("#canvas").getAttribute("viewBox"))!
+    .split(" ")
+    .map(Number);
+  expect(fitted[0] + fitted[2] / 2).toBeCloseTo(500);
+  expect(fitted[1] + fitted[3] / 2).toBeCloseTo(500);
   const bounds = (await page.locator("#canvas").boundingBox())!,
     x = bounds.x + bounds.width / 2,
     y = bounds.y + bounds.height / 2;
@@ -164,37 +187,46 @@ test("two-tap tools, brush shape, sliders and touch gestures edit without scroll
 test("top bar opens character/library and export panels and saves/imports files", async ({
   page,
 }) => {
-  await page
-    .getByRole("button", { name: "Choose character or open library" })
-    .click();
-  await expect(
-    page.getByRole("dialog", { name: "Character and library" }),
-  ).toBeVisible();
+  await page.getByRole("button", { name: "Choose character" }).click();
+  await expect(page.getByRole("dialog", { name: "Character" })).toBeVisible();
+  await expect(page.locator("#phonePanel .library-panel")).toHaveCount(0);
+  await expect(page.locator("#phonePanel #fontFile")).toHaveCount(0);
   await page.locator("#character").fill("日");
   await page.locator("#loadCharacter").click();
   await expect(page.locator("#phonePanel")).toHaveCount(0);
   await expect(page.locator(".phone-character span")).toHaveText("日");
+  await page.getByRole("button", { name: "Choose font", exact: true }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Font", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator("#fontFile")).toHaveCount(1);
+  await expect(page.locator("#phonePanel #character")).toHaveCount(0);
+  await expect(page.locator("#phonePanel .library-panel")).toHaveCount(0);
+  await page.getByRole("button", { name: "Close panel" }).click();
+  const libraryButton = (await page
+    .getByRole("button", { name: "Open library", exact: true })
+    .boundingBox())!;
+  const saveButton = (await page
+    .getByRole("button", { name: "Save to library", exact: true })
+    .boundingBox())!;
+  expect(libraryButton.x + libraryButton.width).toBeLessThanOrEqual(
+    saveButton.x,
+  );
   await page
     .getByRole("button", { name: "Save to library", exact: true })
     .click();
-  await page
-    .getByRole("button", { name: "Choose character or open library" })
-    .click();
+  await page.getByRole("button", { name: "Open library" }).click();
   await expect(page.locator(".library-item")).toHaveCount(1);
   const download = page.waitForEvent("download");
   await page.locator("#exportProject").click();
   const backup = await readFile((await (await download).path())!);
   await page.getByRole("button", { name: "Close panel" }).click();
-  await page
-    .locator("#phoneImportFile")
-    .setInputFiles({
-      name: "phone-library.json",
-      mimeType: "application/json",
-      buffer: backup,
-    });
-  await page
-    .getByRole("button", { name: "Choose character or open library" })
-    .click();
+  await page.locator("#phoneImportFile").setInputFiles({
+    name: "phone-library.json",
+    mimeType: "application/json",
+    buffer: backup,
+  });
+  await page.getByRole("button", { name: "Open library" }).click();
   await expect(page.locator(".library-item")).toHaveCount(2);
   await page.screenshot({ path: "tmp/phone-character-panel.png" });
   await page.getByRole("button", { name: "Close panel" }).click();
