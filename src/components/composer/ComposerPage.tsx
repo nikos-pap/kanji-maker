@@ -273,6 +273,7 @@ export function ComposerPage({ editor: e }: { editor: Editor }) {
       {sheet && sheet !== "library" && (
         <ComposerDialog
           id="compositionSheet"
+          className={sheet === "add" ? "component-picker-dialog" : ""}
           title={titles[sheet]}
           compact={compact}
           onClose={() => setSheet(null)}

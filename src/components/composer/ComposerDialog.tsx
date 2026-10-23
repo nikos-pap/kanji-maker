@@ -5,12 +5,14 @@ export function ComposerDialog({
   id,
   title,
   compact,
+  className = "",
   onClose,
   children,
 }: {
   id: string;
   title: string;
   compact: boolean;
+  className?: string;
   onClose: () => void;
   children: ReactNode;
 }) {
@@ -19,7 +21,7 @@ export function ComposerDialog({
       id={id}
       title={title}
       compact={compact}
-      className="composer-dialog"
+      className={"composer-dialog " + className}
       closeLabel="Close component panel"
       onClose={onClose}
     >

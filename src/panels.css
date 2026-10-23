@@ -181,3 +181,15 @@ dialog.panel-dialog.library-dialog {
     height: 36px;
   }
 }
+
+dialog.panel-dialog.component-picker-dialog {
+  height: min(720px, 90dvh);
+}
+.component-picker-dialog > .panel-dialog-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.component-picker-dialog .component-picker {
+  flex: 1;
+}

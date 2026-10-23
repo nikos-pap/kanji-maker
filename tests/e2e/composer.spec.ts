@@ -85,7 +85,6 @@ test("adds radicals and strokes, moves/resizes/crops parts and opens the result 
   await expect
     .poll(async () => (await composition(page)).parts[0].crop.x)
     .toBeCloseTo(250, 0);
-  await page.getByRole("tab", { name: "Strokes", exact: true }).click();
   await page
     .getByRole("button", { name: "Add horizontal stroke", exact: true })
     .click();
@@ -166,7 +165,6 @@ test("adds radicals and strokes, moves/resizes/crops parts and opens the result 
 test("restores the editable composition independently of the normal editor", async ({
   page,
 }) => {
-  await page.getByRole("tab", { name: "Strokes", exact: true }).click();
   await page
     .getByRole("button", { name: "Add vertical hook stroke", exact: true })
     .click();
@@ -253,7 +251,37 @@ test.describe("phone composer", () => {
     await page
       .getByRole("button", { name: "Add radical or stroke", exact: true })
       .click();
-    await page.getByRole("tab", { name: "Strokes", exact: true }).click();
+    await expect(
+      page.getByRole("tablist", { name: "Component type" }),
+    ).toHaveCount(0);
+    const picker = page.getByRole("dialog", {
+      name: "Add radical or stroke",
+      exact: true,
+    });
+    const search = picker.getByRole("searchbox", { name: "Find a component" });
+    const beforeSearch = (await search.boundingBox())!;
+    const closeButton = picker.getByRole("button", {
+      name: "Close component panel",
+    });
+    const beforeClose = (await closeButton.boundingBox())!;
+    const list = picker.getByRole("region", {
+      name: "Radicals and strokes",
+      exact: true,
+    });
+    expect(
+      await list.evaluate(
+        (element) => element.scrollHeight > element.clientHeight,
+      ),
+    ).toBe(true);
+    await list.evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+    });
+    expect((await search.boundingBox())!.y).toBeCloseTo(beforeSearch.y);
+    expect((await closeButton.boundingBox())!.y).toBeCloseTo(beforeClose.y);
+    await expect(
+      picker.getByRole("button", { name: "Add 龠 radical", exact: true }),
+    ).toBeInViewport();
+    await search.fill("horizontal");
     await page
       .getByRole("button", { name: "Add horizontal stroke", exact: true })
       .click();
@@ -318,6 +346,19 @@ test("radicals are grouped by stroke count and the preview uses real text", asyn
   page,
 }) => {
   await expect(page.locator("[data-radical-number]")).toHaveCount(214);
+  await expect(
+    page.getByRole("tablist", { name: "Component type" }),
+  ).toHaveCount(0);
+  const oneStroke = page.getByRole("group", { name: "1 stroke", exact: true });
+  await expect(
+    oneStroke.getByRole("button", {
+      name: "Add horizontal stroke",
+      exact: true,
+    }),
+  ).toBeEnabled();
+  await expect(
+    oneStroke.getByRole("button", { name: "Add 一 radical", exact: true }),
+  ).toBeEnabled();
   await expect(
     page.getByRole("button", { name: "Add 龠 radical", exact: true }),
   ).toBeEnabled();

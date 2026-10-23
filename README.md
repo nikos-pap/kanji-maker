@@ -116,7 +116,10 @@ The generated data notice is in `assets/licenses/unicode-LICENSE.txt` and is cop
 to the built site's `licenses/` directory.
 
 On phones the canvas fills the main view. Add and Component settings sit in the
-second top bar and open sheets; settings uses a sliders icon. Editor sits at the
+second top bar and open sheets; settings uses a sliders icon.
+The Add picker combines radicals and stroke shapes in one list, with stroke shapes
+in the 1-stroke group. Only the list scrolls; search, custom-character entry and the
+close button stay fixed. The desktop picker uses the same layout. Editor sits at the
 left of the first top bar. Only sheet contents and the horizontal component strip scroll. Sheet headings
 and close buttons stay fixed above their scrolling contents.
 
