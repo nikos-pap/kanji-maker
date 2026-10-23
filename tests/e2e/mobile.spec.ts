@@ -63,6 +63,15 @@ test("phone canvas and controls fit the viewport in portrait and landscape", asy
     );
     expect(print.y).toBeGreaterThanOrEqual(canvas.y - 1);
     expect(print.y + print.height).toBeLessThan(controls.y);
+    expect(canvas.x).toBeCloseTo(0);
+    expect(canvas.y).toBeCloseTo(0);
+    expect(canvas.width).toBeCloseTo(width);
+    expect(canvas.height).toBeCloseTo(height);
+    if (width < height) expect(print.width).toBeCloseTo(width);
+    for (const button of await page.locator(".drag-adjust-button").all()) {
+      const box = (await button.boundingBox())!;
+      expect(box.width).toBeCloseTo(box.height);
+    }
     await page.locator("#phoneTools").click();
     await expect(page.locator("#phoneToolPalette [data-tool]")).toHaveText([
       "Draw",
@@ -269,4 +278,36 @@ test("top bar opens character/library and export panels and saves/imports files"
       () => document.documentElement.scrollHeight <= innerHeight,
     ),
   ).toBe(true);
+});
+
+test("zoomed artwork paints outside the fit area all the way to the screen boundary", async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    const key = "kanji-maker.draft.v1";
+    const data = JSON.parse(localStorage.getItem(key)!);
+    data.model.basePath = "M0 0H1000V1000H0Z";
+    data.model.operations = [];
+    localStorage.setItem(key, JSON.stringify(data));
+  });
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Save to library", exact: true }),
+  ).toBeEnabled();
+  const zoom = page.getByRole("button", {
+    name: "Fit canvas / Zoom",
+    exact: true,
+  });
+  await zoom.focus();
+  await page.keyboard.press("End");
+  await expect(zoom).toHaveAttribute("data-value", "1600%");
+  const hit = await page.evaluate(() =>
+    [
+      [2, innerHeight / 2],
+      [innerWidth - 2, innerHeight / 2],
+      [innerWidth / 2, 60],
+      [innerWidth / 2, innerHeight - 2],
+    ].map(([x, y]) => !!document.elementFromPoint(x, y)?.closest("#artwork")),
+  );
+  expect(hit).toEqual([true, true, true, true]);
 });

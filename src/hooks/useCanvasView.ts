@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import type { Camera } from "../types";
 import { boundedCamera, zoomCamera } from "../lib/viewport";
+import type { ViewportSize } from "../lib/viewport";
 
 export function useCanvasView(session: number, bounded = false) {
   const [stored, updateCamera] = useState<Camera>({ x: 0, y: 0, zoom: 1 });
-  const [bounds, setBounds] = useState({ width: 620, height: 620 });
+  const [bounds, setBounds] = useState<ViewportSize>({
+    width: 620,
+    height: 620,
+  });
   const constrain = (next: Camera) =>
     bounded ? boundedCamera(next, bounds) : next;
   const camera = constrain(stored);

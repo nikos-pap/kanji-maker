@@ -110,19 +110,19 @@ export function DragAdjustButton({
     >
       <svg
         className="adjust-value"
-        viewBox="0 0 60 40"
+        viewBox="0 0 44 44"
         aria-hidden="true"
         focusable="false"
         data-shape={icon}
       >
         {icon === "round" ? (
-          <circle cx="30" cy="20" r="18" />
+          <circle cx="22" cy="22" r="18" />
         ) : icon === "square" ? (
-          <rect x="12" y="2" width="36" height="36" rx="1" />
+          <rect x="4" y="4" width="36" height="36" rx="1" />
         ) : (
-          <path d="M13 3H4v9m43-9h9v9M4 28v9h9m43-9v9h-9" />
+          <path d="M13 3H3v10M31 3h10v10M3 31v10h10m28-10v10H31" />
         )}
-        <text x="30" y="20" dominantBaseline="central" textAnchor="middle">
+        <text x="22" y="22" dominantBaseline="central" textAnchor="middle">
           {valueText}
         </text>
       </svg>

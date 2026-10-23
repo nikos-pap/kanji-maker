@@ -75,7 +75,10 @@ export function EditorCanvas(props: Props) {
   const [cursor, setCursor] = useState<Point | null>(null);
   const [space, setSpace] = useState(false),
     [panning, setPanning] = useState(false);
-  const [bounds, setBounds] = useState({ width: 620, height: 620 });
+  const [bounds, setBounds] = useState<ViewportSize>({
+    width: 620,
+    height: 620,
+  });
   const spaceHeld = useRef(false),
     touches = useRef(new Map<number, Point>());
   const pinch = useRef<{
@@ -159,17 +162,40 @@ export function EditorCanvas(props: Props) {
     setCursor(null);
   }, [tool]);
   useEffect(() => {
-    const observer = new ResizeObserver(([entry]) => {
-      const size = {
-        width: entry.contentRect.width || 620,
-        height: entry.contentRect.height || 620,
+    const canvas = svg.current!;
+    const screen = bounded ? canvas.closest(".phone-screen") : null;
+    const topbar = screen?.querySelector(".phone-topbar");
+    const controls = screen?.querySelector(".phone-view-actions");
+    const points = screen?.querySelector(".precision-bar");
+    const measure = () => {
+      const rect = canvas.getBoundingClientRect();
+      const size: ViewportSize = {
+        width: rect.width || 620,
+        height: rect.height || 620,
       };
+      if (screen && topbar && controls) {
+        const top =
+          Math.max(
+            topbar.getBoundingClientRect().bottom,
+            points ? points.getBoundingClientRect().bottom + 8 : 0,
+          ) - rect.top;
+        const bottom = controls.getBoundingClientRect().top - 12 - rect.top;
+        size.fit = {
+          x: 0,
+          y: top,
+          width: size.width,
+          height: Math.max(1, bottom - top),
+        };
+      }
       setBounds(size);
       onViewportSize?.(size);
-    });
-    observer.observe(svg.current!);
+    };
+    const observer = new ResizeObserver(measure);
+    for (const element of [canvas, topbar, controls, points])
+      if (element) observer.observe(element);
+    measure();
     return () => observer.disconnect();
-  }, [onViewportSize]);
+  }, [bounded, onViewportSize, tool]);
   useEffect(() => {
     const canvas = svg.current!;
     const wheel = (event: WheelEvent) => {

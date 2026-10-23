@@ -157,3 +157,67 @@ describe("bounded phone camera", () => {
     expect(view.y + view.height / 2).toBeCloseTo(500);
   });
 });
+
+describe("full-screen phone rendering", () => {
+  const screen = {
+    width: 390,
+    height: 844,
+    fit: { x: 0, y: 55, width: 390, height: 717 },
+  };
+  it("makes 100% use the full phone width while centering above the buttons", () => {
+    const view = canvasViewport(fit, screen);
+    const left = -view.x / view.unit;
+    const top = -view.y / view.unit;
+    const size = 1000 / view.unit;
+    expect(left).toBeCloseTo(0);
+    expect(size).toBeCloseTo(390);
+    expect(top).toBeGreaterThan(screen.fit.y);
+    expect(top + size).toBeLessThan(screen.fit.y + screen.fit.height);
+    expect(top + size / 2).toBeCloseTo(screen.fit.y + screen.fit.height / 2);
+  });
+  it("renders zoomed artwork beyond the fit area in all four screen directions", () => {
+    const view = canvasViewport(
+      boundedCamera(zoomCamera(fit, 4), screen),
+      screen,
+    );
+    const pixel = (x: number, y: number) => [
+      (x - view.x) / view.unit,
+      (y - view.y) / view.unit,
+    ];
+    const [left, top] = pixel(0, 0);
+    const [right, bottom] = pixel(1000, 1000);
+    expect(left).toBeLessThan(0);
+    expect(top).toBeLessThan(0);
+    expect(right).toBeGreaterThan(screen.width);
+    expect(bottom).toBeGreaterThan(screen.height);
+    expect(view.width / view.unit).toBeCloseTo(screen.width);
+    expect(view.height / view.unit).toBeCloseTo(screen.height);
+  });
+  it("limits inward movement independently of the larger render surface", () => {
+    const original = canvasViewport(fit, screen);
+    for (const offset of [-10000, 10000]) {
+      const view = canvasViewport(
+        boundedCamera({ x: offset, y: offset, zoom: 4 }, screen),
+        screen,
+      );
+      const edge = offset < 0 ? 0 : 1000;
+      expect((edge - view.x) / view.unit).toBeCloseTo(
+        (edge - original.x) / original.unit,
+      );
+      expect((edge - view.y) / view.unit).toBeCloseTo(
+        (edge - original.y) / original.unit,
+      );
+      expect(view.height / view.unit).toBeCloseTo(844);
+    }
+  });
+  it("keeps pinch anchors correct with an offset fit center", () => {
+    const anchor: [number, number] = [350, 480];
+    const fraction: [number, number] = [0.3, 0.65];
+    const view = canvasViewport(
+      anchoredCamera(3, screen, anchor, fraction),
+      screen,
+    );
+    expect(view.x + fraction[0] * view.width).toBeCloseTo(anchor[0]);
+    expect(view.y + fraction[1] * view.height).toBeCloseTo(anchor[1]);
+  });
+});
