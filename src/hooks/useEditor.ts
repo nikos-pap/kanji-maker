@@ -8,6 +8,8 @@ import type {
   Tool,
 } from "../types";
 import { clone, glyphPath } from "../lib/geometry";
+import type { Composition } from "../lib/composition";
+import { compositionPng, compositionSvg } from "../lib/compositionExport";
 import {
   allocateCode,
   appFile,
@@ -21,6 +23,8 @@ import {
   STORAGE,
   validMeta,
   validModel,
+  upsertComposition,
+  compositionForModel,
 } from "../lib/storage";
 import {
   download,
@@ -71,7 +75,7 @@ function restore() {
   return { model, library, meta, libraryId, saved, warning };
 }
 
-export function useEditor() {
+export function useEditor(active = true) {
   const [initial] = useState(restore);
   const [model, setModel] = useState(initial.model),
     [library, setLibrary] = useState(initial.library),
@@ -87,6 +91,7 @@ export function useEditor() {
   const [busy, setBusy] = useState(false),
     [character, setCharacter] = useState(initial.model.character),
     [fontLabel, setFontLabel] = useState("Included Japanese serif");
+  const [fontReady, setFontReady] = useState(false);
   const [copyMode, setCopyMode] = useState<"text" | "image">("text"),
     [session, setSession] = useState(0),
     [help, setHelp] = useState(false);
@@ -177,6 +182,7 @@ export function useEditor() {
         defaultFont.current = loaded.font;
         licence.current = loaded.licence;
         if (!font.current) font.current = loaded.font;
+        setFontReady(true);
         setModel((current) => {
           if (current.basePath) return current;
           const basePath = glyphPath(loaded.font, "長");
@@ -229,6 +235,24 @@ export function useEditor() {
     setFuture([]);
     setSession((s) => s + 1);
   }
+  const getCharacterOutline = useCallback(
+    (character: string) => {
+      if (!font.current)
+        throw Error(
+          "The font is still loading. You can add a built-in stroke while you wait.",
+        );
+      const path = glyphPath(font.current, character);
+      if (!path) throw Error("That character has no visible outline.");
+      return { path, fontLabel, customFont: customFont.current };
+    },
+    [fontLabel, fontReady],
+  );
+  async function openComposition(next: GlyphModel) {
+    if (busy || !(await canReplace())) return false;
+    replace(clone(next));
+    notify("Composition opened. Save it to your library or continue editing.");
+    return true;
+  }
   async function loadCharacter() {
     if (busy || gesture.current) return;
     const chars = [...character.trim()];
@@ -271,6 +295,7 @@ export function useEditor() {
         basePath = glyphPath(loaded, char);
       if (!basePath) throw Error("That character has no visible outline.");
       font.current = loaded;
+      setFontReady(true);
       customFont.current = true;
       setFontLabel(file.name);
       replace({
@@ -316,6 +341,7 @@ export function useEditor() {
     if (!gesture.current && !busy) setTool(next);
   }
   useEffect(() => {
+    if (!active) return;
     const listener = (e: KeyboardEvent) => {
       if (
         (e.target as Element).closest("input,textarea,select,dialog") ||
@@ -359,7 +385,13 @@ export function useEditor() {
       const old = library.find((g) => g.id === libraryId),
         id = old?.id || crypto.randomUUID(),
         codePoint = old?.codePoint ?? allocateCode(nextMeta);
-      const item = { id, codePoint, model: clone(nextModel) },
+      const composition = compositionForModel(old, nextModel);
+      const item = {
+          id,
+          codePoint,
+          model: clone(nextModel),
+          ...(composition ? { composition } : {}),
+        },
         next = [item, ...library.filter((g) => g.id !== id)];
       nextMeta.revision++;
       if (!persistLibrary(next, nextMeta)) return;
@@ -375,6 +407,20 @@ export function useEditor() {
     if (!busy && (await canReplace())) {
       replace(clone(entry.model), entry);
       notify("Saved character opened.");
+      return true;
+    }
+    return false;
+  }
+  function saveComposition(composition: Composition, glyph: GlyphModel) {
+    if (busy) return null;
+    try {
+      const next = upsertComposition(library, meta, composition, glyph);
+      if (!persistLibrary(next.library, next.meta)) return null;
+      notify("Composition saved to your library.");
+      return next.entry.id;
+    } catch (error) {
+      notify(errorText(error), true);
+      return null;
     }
   }
   async function removeGlyph(entry: LibraryEntry) {
@@ -414,13 +460,15 @@ export function useEditor() {
     }
   }
   async function runExport(action: () => Promise<void>) {
-    if (running.current || gesture.current) return;
+    if (running.current || gesture.current) return false;
     running.current = true;
     setBusy(true);
     try {
       await action();
+      return true;
     } catch (error) {
       notify(`Could not export: ${errorText(error)}`, true);
+      return false;
     } finally {
       running.current = false;
       setBusy(false);
@@ -468,6 +516,28 @@ export function useEditor() {
           throw Error("Font validation failed.");
         download(new Blob([bytes], { type: "font/ttf" }), `${family}.ttf`);
       }
+      notify("Download ready.");
+    });
+  }
+  function exportSavedImage(entry: LibraryEntry, kind: "svg" | "png") {
+    return runExport(async () => {
+      const filename = (entry.model.name.trim() || "custom-kanji")
+        .replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-")
+        .slice(0, 80);
+      const blob =
+        kind === "svg"
+          ? new Blob(
+              [
+                entry.composition
+                  ? compositionSvg(entry.composition)
+                  : svgText(entry.model),
+              ],
+              { type: "image/svg+xml" },
+            )
+          : await (entry.composition
+              ? compositionPng(entry.composition)
+              : png(entry.model));
+      download(blob, filename + "." + kind);
       notify("Download ready.");
     });
   }
@@ -550,6 +620,10 @@ export function useEditor() {
     }
   }
   return {
+    fontReady,
+    getCharacterOutline,
+    openComposition,
+    saveComposition,
     model,
     changeModel,
     remember,
@@ -577,6 +651,7 @@ export function useEditor() {
     removeGlyph,
     importFile,
     exportCurrent,
+    exportSavedImage,
     exportLibrary,
     copyMode,
     setCopyMode,

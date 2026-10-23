@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import type { PointerEvent } from "react";
 import { clamp } from "../../lib/geometry";
+import { Icon } from "../Icon";
 import type { IconName } from "../Icon";
 
 type Props = {
@@ -108,24 +109,7 @@ export function DragAdjustButton({
         }
       }}
     >
-      <svg
-        className="adjust-value"
-        viewBox="0 0 44 44"
-        aria-hidden="true"
-        focusable="false"
-        data-shape={icon}
-      >
-        {icon === "round" ? (
-          <circle cx="22" cy="22" r="18" />
-        ) : icon === "square" ? (
-          <rect x="4" y="4" width="36" height="36" rx="1" />
-        ) : (
-          <path d="M13 3H3v10M31 3h10v10M3 31v10h10m28-10v10H31" />
-        )}
-        <text x="22" y="22" dominantBaseline="central" textAnchor="middle">
-          {valueText}
-        </text>
-      </svg>
+      <Icon name={icon} width="20" height="20" />
     </button>
   );
 }

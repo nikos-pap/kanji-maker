@@ -1,4 +1,12 @@
-export function AppHeader({ onHelp }: { onHelp: () => void }) {
+export function AppHeader({
+  onHelp,
+  onLibrary,
+  onImport,
+}: {
+  onHelp: () => void;
+  onLibrary: () => void;
+  onImport: () => void;
+}) {
   return (
     <header>
       <div className="brand">
@@ -9,9 +17,14 @@ export function AppHeader({ onHelp }: { onHelp: () => void }) {
           <h1>Kanji Maker</h1>
         </div>
       </div>
-      <button id="help" className="quiet" onClick={onHelp}>
-        Help
-      </button>
+      <nav className="app-navigation" aria-label="Editor pages">
+        <a href="#compose">Radicals &amp; strokes</a>
+        <button onClick={onLibrary}>Library</button>
+        <button onClick={onImport}>Import</button>
+        <button id="help" className="quiet" onClick={onHelp}>
+          Help
+        </button>
+      </nav>
     </header>
   );
 }

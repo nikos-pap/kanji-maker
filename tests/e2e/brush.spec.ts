@@ -4,9 +4,17 @@ import type { Page } from "@playwright/test";
 import { canvasPoint } from "../helpers/canvas";
 
 async function exportedAlpha(page: Page, x: number, y: number) {
+  await page.locator("#saveGlyph").click();
+  await page.getByRole("button", { name: "Library", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Export Brush test", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Export", exact: true });
   const pending = page.waitForEvent("download");
-  await page.locator("#exportSvg").click();
+  await dialog.getByRole("button", { name: "Export", exact: true }).click();
   const text = await readFile((await (await pending).path())!, "utf8");
+  await expect(dialog).toHaveCount(0);
+  await page.getByRole("button", { name: "Close library" }).click();
   return page.evaluate(
     async ({ text, x, y }) => {
       const url = URL.createObjectURL(
@@ -35,7 +43,7 @@ test("square brush is shared by Draw, Erase and Line and survives save/reload", 
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("./");
-  await expect(page.locator("#exportSvg")).toBeEnabled();
+  await expect(page.locator("#exportFont")).toBeEnabled();
   // Keep the source outline outside the pixel samples used to check the brush.
   const backup = {
     format: "kanji-maker-library",
@@ -64,7 +72,9 @@ test("square brush is shared by Draw, Erase and Line and survives save/reload", 
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify(backup)),
   });
+  await page.getByRole("button", { name: "Library", exact: true }).click();
   await page.locator(".library-load").click();
+  await expect(page.locator("#libraryDialog")).toHaveCount(0);
   await page.locator('[data-brush-shape="square"]').click();
   await page.locator("#brushValue").fill("100");
   const center = await canvasPoint(page, 500, 500);
@@ -100,7 +110,7 @@ test("square brush is shared by Draw, Erase and Line and survives save/reload", 
   await expect(page.locator("#showGrid")).not.toBeChecked();
   await page.locator("#saveGlyph").click();
   await page.reload();
-  await expect(page.locator("#exportSvg")).toBeEnabled();
+  await expect(page.locator("#exportFont")).toBeEnabled();
   const operations = await page.evaluate(
     () =>
       JSON.parse(localStorage.getItem("kanji-maker.draft.v1")!).model

@@ -16,5 +16,9 @@ await copyFile(
   path.join(root, "assets/licenses/fontkit-LICENSE.txt"),
   path.join(root, "docs/licenses/fontkit-LICENSE.txt"),
 );
+await copyFile(
+  path.join(root, "assets/licenses/unicode-LICENSE.txt"),
+  path.join(root, "docs/licenses/unicode-LICENSE.txt"),
+);
 await writeFile(path.join(root, "docs/.nojekyll"), "");
 console.log("Ready: publish the docs/ folder with GitHub Pages.");

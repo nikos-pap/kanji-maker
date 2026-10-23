@@ -61,6 +61,14 @@ export function MobileTools({ editor: e }: { editor: Editor }) {
                 {e.brushShape === "round" ? "Square tip" : "Round tip"}
               </span>
             </button>
+            <a
+              className="phone-tool-choice"
+              href="#compose"
+              aria-label="Radicals and strokes"
+            >
+              <Icon name="compose" />
+              <span>Build</span>
+            </a>
           </div>
         </>
       )}

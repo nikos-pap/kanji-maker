@@ -9,7 +9,7 @@ test.beforeEach(async ({ page }) => {
   errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("./");
-  await expect(page.locator("#exportSvg")).toBeEnabled();
+  await expect(page.locator("#exportFont")).toBeEnabled();
   await expect
     .poll(
       async () =>
@@ -114,17 +114,36 @@ test("library survives reload and exports JSON, SVG, PNG, font and Word", async 
 }) => {
   await page.locator("#glyphName").fill("React library test");
   await page.locator("#saveGlyph").click();
+  await page.getByRole("button", { name: "Library", exact: true }).click();
   await expect(page.locator("#library .library-item")).toHaveCount(1);
   const stored = await page.evaluate(() =>
     JSON.parse(localStorage.getItem("kanji-maker.library.v1")!),
   );
   expect(stored[0].codePoint).toBe(0xe000);
   await page.reload();
+  await expect(page.locator("#exportFont")).toBeEnabled();
+  await page.locator("#glyphName").fill("Unsaved different name");
+  await page.getByRole("button", { name: "Library", exact: true }).click();
   await expect(page.locator("#exportLibraryFont")).toBeEnabled();
+  for (const kind of ["SVG", "PNG"]) {
+    await page
+      .getByRole("button", { name: "Export React library test", exact: true })
+      .click();
+    const dialog = page.getByRole("dialog", { name: "Export", exact: true });
+    await dialog.getByRole("radio", { name: kind, exact: true }).check();
+    const pending = page.waitForEvent("download");
+    await dialog.getByRole("button", { name: "Export", exact: true }).click();
+    const file = await pending;
+    expect(file.suggestedFilename()).toBe(
+      "React library test." + kind.toLowerCase(),
+    );
+    const bytes = await readFile((await file.path())!);
+    if (kind === "SVG") expect(bytes.toString()).toContain("<path");
+    else expect([...bytes.subarray(0, 4)]).toEqual([137, 80, 78, 71]);
+    await expect(dialog).toHaveCount(0);
+  }
+  await expect(page.locator("#libraryDialog input[type=file]")).toHaveCount(0);
   for (const [id, extension] of [
-    ["exportSvg", ".svg"],
-    ["exportPng", ".png"],
-    ["exportFont", ".ttf"],
     ["exportProject", ".json"],
     ["exportLibraryFont", ".ttf"],
     ["exportLibraryWord", ".docx"],
@@ -140,15 +159,16 @@ test("library survives reload and exports JSON, SVG, PNG, font and Word", async 
       expect(font.hasGlyphForCodePoint(0xe000)).toBe(true);
     } else if (extension === ".json")
       expect(JSON.parse(bytes.toString()).glyphs[0].id).toBe(stored[0].id);
-    else if (extension === ".png")
-      expect([...bytes.subarray(0, 4)]).toEqual([137, 80, 78, 71]);
-    else if (extension === ".svg") expect(bytes.toString()).toContain("<path");
     else if (extension === ".docx")
       expect(bytes.includes(Buffer.from("word/fonts/library.odttf"))).toBe(
         true,
       );
     await expect(page.locator("#saveGlyph")).toBeEnabled();
   }
+  await page.getByRole("button", { name: "Close library" }).click();
+  const singleFont = page.waitForEvent("download");
+  await page.locator("#exportFont").click();
+  expect((await singleFont).suggestedFilename()).toContain(".ttf");
 });
 
 test("imports compatible backups with stable codes and loads a selected font", async ({
@@ -175,6 +195,7 @@ test("imports compatible backups with stable codes and loads a selected font", a
       buffer: Buffer.from(JSON.stringify(backup)),
     });
   await importBackup();
+  await page.getByRole("button", { name: "Library", exact: true }).click();
   await expect(page.locator("#library .library-item")).toHaveCount(1);
   let stored = await page.evaluate(() =>
     JSON.parse(localStorage.getItem("kanji-maker.library.v1")!),
@@ -186,23 +207,28 @@ test("imports compatible backups with stable codes and loads a selected font", a
         JSON.parse(localStorage.getItem("kanji-maker.library-metadata.v1")!).id,
     ),
   ).toBe(identity);
+  await page.getByRole("button", { name: "Close library" }).click();
   await importBackup();
+  await page.getByRole("button", { name: "Library", exact: true }).click();
   await expect(page.locator("#library .library-item")).toHaveCount(2);
   stored = await page.evaluate(() =>
     JSON.parse(localStorage.getItem("kanji-maker.library.v1")!),
   );
   expect(stored[0].codePoint).toBe(0xe081);
+  await page.getByRole("button", { name: "Close library" }).click();
   await page
     .locator("#fontFile")
     .setInputFiles(path.resolve("assets/fonts/N5PDFSerif-Regular.ttf"));
   await expect(page.locator("#fontName")).toHaveText("N5PDFSerif-Regular.ttf");
-  await expect(page.locator("#exportSvg")).toBeEnabled();
+  await expect(page.locator("#exportFont")).toBeEnabled();
+  await page.getByRole("button", { name: "Library", exact: true }).click();
   await page.locator("#library .library-delete").first().click();
   await page
     .locator("#confirmDialog")
     .getByRole("button", { name: "Continue" })
     .click();
   await expect(page.locator("#library .library-item")).toHaveCount(1);
+  await page.getByRole("button", { name: "Close library" }).click();
   await page.locator("#help").click();
   await expect(page.locator("#helpDialog")).toBeVisible();
   await page.getByRole("button", { name: "Got it" }).click();

@@ -4,7 +4,7 @@ import { useCanvasView } from "../../hooks/useCanvasView";
 import { EditorCanvas } from "../EditorCanvas";
 import { CharacterForm } from "../CharacterForm";
 import { FontPicker } from "../FontPicker";
-import { LibraryPanel } from "../LibraryPanel";
+import { LibraryDialog } from "../LibraryDialog";
 import { ExportPanel } from "../ExportPanel";
 import { Modal } from "../Modal";
 import { Icon } from "../Icon";
@@ -62,7 +62,14 @@ export function MobileEditor({ editor: e }: { editor: Editor }) {
         />
         <MobileTools editor={e} />
       </div>
-      {sheet && (
+      {sheet === "library" && (
+        <LibraryDialog
+          editor={e}
+          current={e.currentEntry?.id}
+          onClose={() => setSheet(null)}
+        />
+      )}
+      {sheet && sheet !== "library" && (
         <Modal
           id="phonePanel"
           className="phone-sheet"
@@ -76,7 +83,6 @@ export function MobileEditor({ editor: e }: { editor: Editor }) {
             </button>
           </div>
           {sheet === "character" && <CharacterForm editor={e} />}
-          {sheet === "library" && <LibraryPanel editor={e} />}
           {sheet === "font" && <FontPicker editor={e} />}
           {sheet === "export" && (
             <>

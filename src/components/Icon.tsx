@@ -2,6 +2,9 @@ import type { SVGProps } from "react";
 
 export type IconName =
   | "draw"
+  | "compose"
+  | "resize"
+  | "preview"
   | "erase"
   | "cut"
   | "line"
@@ -21,6 +24,11 @@ export type IconName =
   | "zoom"
   | "chevron";
 const paths: Record<Exclude<IconName, "round" | "square">, string> = {
+  compose: "M3 3h7v18H3ZM14 3h7v7h-7Zm0 11h7v7h-7Z",
+  resize:
+    "M4 9V4h5m6 0h5v5M4 15v5h5m6 0h5v-5M8 8 4 4m12 4 4-4M8 16l-4 4m12-4 4 4",
+  preview:
+    "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Zm13 0a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z",
   draw: "m15 4 5 5M4 20l5-1L21 7a2.1 2.1 0 0 0-5-3L4 16v4Z",
   erase:
     "m13 4 7 7a2 2 0 0 1 0 3l-6 6H8l-5-5a2 2 0 0 1 0-3l7-8a2 2 0 0 1 3 0ZM7 8l9 9M8 20h13",

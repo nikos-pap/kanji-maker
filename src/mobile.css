@@ -246,7 +246,10 @@ body:has(.phone-screen) #status {
   position: absolute;
   bottom: calc(12px + env(safe-area-inset-bottom));
   left: 12px;
+  right: 72px;
+  max-width: 340px;
   display: flex;
+  align-items: center;
   gap: 8px;
   z-index: 3;
 }
@@ -276,18 +279,40 @@ body:has(.phone-screen) #status {
   cursor: ns-resize;
   padding: 0;
 }
-.adjust-value {
-  width: 44px;
-  height: 44px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.3;
+.phone-brush-size {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  padding: 0 8px;
+  border: 1px solid #d3dfd4;
+  border-radius: 14px;
+  background: #fffffff0;
+  box-shadow: 0 2px 8px #18322412;
+  color: var(--accent);
 }
-.adjust-value text {
-  fill: currentColor;
-  stroke: none;
-  font-size: 11px;
+.phone-brush-size > svg {
+  flex-shrink: 0;
+}
+.phone-brush-size input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  height: 32px;
+  margin: 0;
+  accent-color: var(--accent);
+  touch-action: pan-y;
+}
+.phone-brush-size output {
+  min-width: 24px;
+  font-size: 10px;
+  text-align: right;
   font-variant-numeric: tabular-nums;
+}
+.phone-brush-size:has(input:disabled) {
+  opacity: 0.45;
 }
 .phone-screen {
   -webkit-user-select: none;

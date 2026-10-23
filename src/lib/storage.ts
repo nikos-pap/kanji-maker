@@ -7,6 +7,8 @@ import type {
   StrokeKind,
 } from "../types";
 import { clone } from "./geometry";
+import { parseComposition } from "./composition";
+import type { Composition } from "./composition";
 
 export const STORAGE = "kanji-maker.library.v1",
   DRAFT = "kanji-maker.draft.v1",
@@ -142,7 +144,14 @@ export function normalizeEntries(
         ? g.codePoint
         : allocateCode(meta);
     used.add(codePoint);
-    return { id, codePoint, model };
+    return {
+      id,
+      codePoint,
+      model,
+      ...(g.composition
+        ? { composition: { ...parseComposition(g.composition), libraryId: id } }
+        : {}),
+    };
   });
 }
 export function importLibrary(
@@ -162,6 +171,42 @@ export function importLibrary(
     incoming = normalizeEntries(data.glyphs, meta, !!restoredMeta);
   meta.revision++;
   return { library: [...incoming, ...library], meta, count: incoming.length };
+}
+export function upsertComposition(
+  library: LibraryEntry[],
+  currentMeta: LibraryMeta,
+  source: Composition,
+  model: GlyphModel,
+) {
+  const composition = parseComposition(source),
+    meta = clone(currentMeta);
+  const old = library.find((entry) => entry.id === composition.libraryId);
+  const id = old?.id || crypto.randomUUID();
+  const entry: LibraryEntry = {
+    id,
+    codePoint: old?.codePoint ?? allocateCode(meta),
+    model: validModel(model),
+    composition: { ...composition, libraryId: id },
+  };
+  meta.revision++;
+  return {
+    entry,
+    meta,
+    library: [entry, ...library.filter((item) => item.id !== id)],
+  };
+}
+/** Renaming or re-saving an unchanged glyph must not discard its editable pieces. */
+export function compositionForModel(
+  entry: LibraryEntry | undefined,
+  model: GlyphModel,
+) {
+  if (
+    !entry?.composition ||
+    entry.model.basePath !== model.basePath ||
+    JSON.stringify(entry.model.operations) !== JSON.stringify(model.operations)
+  )
+    return undefined;
+  return { ...clone(entry.composition), name: model.name };
 }
 export const fingerprint = (model: GlyphModel) =>
   JSON.stringify(validModel(model));

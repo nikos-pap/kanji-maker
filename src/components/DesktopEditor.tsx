@@ -1,22 +1,47 @@
+import { useRef, useState } from "react";
 import type { Editor } from "../hooks/useEditor";
 import { AppHeader } from "./AppHeader";
 import { EditorWorkspace } from "./EditorWorkspace";
 import { ExportPanel } from "./ExportPanel";
 import { GlyphPreview } from "./GlyphPreview";
-import { LibraryPanel } from "./LibraryPanel";
+import { LibraryDialog } from "./LibraryDialog";
 
 export function DesktopEditor({ editor }: { editor: Editor }) {
+  const [library, setLibrary] = useState(false);
+  const importInput = useRef<HTMLInputElement>(null);
   return (
     <>
-      <AppHeader onHelp={() => editor.setHelp(true)} />
+      <AppHeader
+        onHelp={() => editor.setHelp(true)}
+        onLibrary={() => setLibrary(true)}
+        onImport={() => importInput.current?.click()}
+      />
       <main>
         <EditorWorkspace editor={editor} />
         <aside>
           <GlyphPreview model={editor.model} />
           <ExportPanel editor={editor} />
-          <LibraryPanel editor={editor} />
         </aside>
       </main>
+      <input
+        ref={importInput}
+        id="projectFile"
+        type="file"
+        accept=".json"
+        hidden
+        onChange={(event) => {
+          const file = event.currentTarget.files?.[0];
+          event.currentTarget.value = "";
+          if (file) void editor.importFile(file);
+        }}
+      />
+      {library && (
+        <LibraryDialog
+          editor={editor}
+          current={editor.currentEntry?.id}
+          onClose={() => setLibrary(false)}
+        />
+      )}
     </>
   );
 }

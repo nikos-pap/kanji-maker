@@ -4,13 +4,18 @@ import { useCompactLayout } from "./hooks/useCompactLayout";
 import { ConfirmationDialog } from "./components/ConfirmationDialog";
 import { HelpDialog } from "./components/HelpDialog";
 import { useEditor } from "./hooks/useEditor";
+import { usePage } from "./hooks/usePage";
+import { ComposerPage } from "./components/composer/ComposerPage";
 
 export default function App() {
-  const editor = useEditor();
+  const page = usePage();
+  const editor = useEditor(page === "editor");
   const compact = useCompactLayout();
   return (
     <>
-      {compact ? (
+      {page === "compose" ? (
+        <ComposerPage editor={editor} />
+      ) : compact ? (
         <MobileEditor editor={editor} />
       ) : (
         <DesktopEditor editor={editor} />

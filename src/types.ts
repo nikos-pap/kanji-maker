@@ -1,3 +1,5 @@
+import type { Composition } from "./lib/composition";
+
 export type Point = [number, number];
 export type StrokeKind = "erase" | "cut" | "polygon" | "draw" | "line";
 export type Tool = Exclude<StrokeKind, "polygon"> | "points";
@@ -22,6 +24,7 @@ export interface LibraryEntry {
   id: string;
   codePoint: number;
   model: GlyphModel;
+  composition?: Composition;
 }
 export interface LibraryMeta {
   id: string;

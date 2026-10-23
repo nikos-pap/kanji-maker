@@ -35,10 +35,6 @@
   flex-direction: column;
   gap: 7px;
 }
-.library-copy {
-  padding: 5px 7px;
-  font-size: 14px;
-}
 .library-label {
   display: flex;
   flex-direction: column;

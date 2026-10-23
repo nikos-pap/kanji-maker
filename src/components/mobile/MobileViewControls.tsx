@@ -23,19 +23,20 @@ export function MobileViewControls({ editor: e, zoom, onZoom, onFit }: Props) {
       >
         <Icon name="guides" width="20" height="20" />
       </button>
-      <DragAdjustButton
-        label="Brush size"
-        icon={e.brushShape}
-        min={1}
-        max={160}
-        step={0.5}
-        sensitivity={0.5}
-        value={e.brush}
-        valueText={String(e.brush)}
-        disabled={e.busy || !["draw", "erase", "line"].includes(e.tool)}
-        onChange={e.setBrush}
-        onReset={() => e.setBrush(45)}
-      />
+      <label className="phone-brush-size">
+        <Icon name={e.brushShape} width="18" height="18" />
+        <input
+          aria-label="Brush size"
+          type="range"
+          min="1"
+          max="160"
+          step="0.5"
+          value={e.brush}
+          disabled={e.busy || !["draw", "erase", "line"].includes(e.tool)}
+          onChange={(event) => e.setBrush(event.currentTarget.valueAsNumber)}
+        />
+        <output aria-hidden="true">{e.brush}</output>
+      </label>
       <DragAdjustButton
         label="Fit canvas / Zoom"
         icon="fit"

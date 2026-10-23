@@ -28,6 +28,7 @@ export function Modal({
       ref={ref}
       onCancel={(event) => {
         event.preventDefault();
+        event.stopPropagation();
         onDismiss();
       }}
     >

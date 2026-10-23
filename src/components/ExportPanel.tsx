@@ -40,20 +40,6 @@ export function ExportPanel({ editor: e }: { editor: ExportPanelState }) {
       </button>
       <div className="export-buttons">
         <button
-          id="exportSvg"
-          disabled={e.disabled}
-          onClick={() => e.exportCurrent("svg")}
-        >
-          SVG
-        </button>
-        <button
-          id="exportPng"
-          disabled={e.disabled}
-          onClick={() => e.exportCurrent("png")}
-        >
-          PNG
-        </button>
-        <button
           id="exportFont"
           title="Single-character font at U+E000"
           disabled={e.disabled}

@@ -102,7 +102,7 @@ test("phone canvas and controls fit the viewport in portrait and landscape", asy
   await page.screenshot({ path: "tmp/phone-portrait.png" });
 });
 
-test("two-tap tools, drag buttons and touch gestures edit without scrolling", async ({
+test("two-tap tools, brush slider and zoom gestures edit without scrolling", async ({
   page,
 }) => {
   for (const tool of ["Erase", "Cut area", "Line", "Points", "Draw"]) {
@@ -117,32 +117,31 @@ test("two-tap tools, drag buttons and touch gestures edit without scrolling", as
   await page.locator("#phoneTools").click();
   await page.getByRole("switch", { name: "Square brush" }).click();
   await expect(page.locator("#phoneToolPalette")).toHaveCount(0);
-  const brush = page.getByRole("button", { name: "Brush size", exact: true });
+  const brush = page.getByRole("slider", { name: "Brush size", exact: true });
   const fitButton = page.getByRole("button", {
     name: "Fit canvas / Zoom",
     exact: true,
   });
-  const buttonBounds = (await brush.boundingBox())!;
+  const sliderBounds = (await brush.boundingBox())!;
   await page.mouse.move(
-    buttonBounds.x + buttonBounds.width / 2,
-    buttonBounds.y + buttonBounds.height / 2,
+    sliderBounds.x + sliderBounds.width * 0.3,
+    sliderBounds.y + sliderBounds.height / 2,
   );
   await page.mouse.down();
   await page.mouse.move(
-    buttonBounds.x + buttonBounds.width / 2,
-    buttonBounds.y - 100,
+    sliderBounds.x + sliderBounds.width * 0.95,
+    sliderBounds.y + sliderBounds.height / 2,
     { steps: 8 },
   );
   await page.mouse.up();
-  expect(Number(await brush.getAttribute("data-value"))).toBeGreaterThan(90);
-  await brush.click();
-  await expect(brush).toHaveAttribute("data-value", "45");
+  expect(Number(await brush.inputValue())).toBeGreaterThan(90);
   await brush.focus();
+  await page.keyboard.press("Home");
+  await expect(brush).toHaveValue("1");
   await page.keyboard.press("End");
-  await expect(brush).toHaveAttribute("data-value", "160");
-  await expect(
-    brush.locator('.adjust-value[data-shape="square"] text'),
-  ).toHaveText("160");
+  await expect(brush).toHaveValue("160");
+  await expect(page.locator(".phone-brush-size output")).toHaveText("160");
+  await expect(fitButton).toHaveText("");
   await fitButton.focus();
   await page.keyboard.press("End");
   await expect(fitButton).toHaveAttribute("data-value", "1600%");
@@ -259,7 +258,7 @@ test("top bar opens character/library and export panels and saves/imports files"
   const download = page.waitForEvent("download");
   await page.locator("#exportProject").click();
   const backup = await readFile((await (await download).path())!);
-  await page.getByRole("button", { name: "Close panel" }).click();
+  await page.getByRole("button", { name: "Close library" }).click();
   await page.locator("#phoneImportFile").setInputFiles({
     name: "phone-library.json",
     mimeType: "application/json",
@@ -267,17 +266,35 @@ test("top bar opens character/library and export panels and saves/imports files"
   });
   await page.getByRole("button", { name: "Open library" }).click();
   await expect(page.locator(".library-item")).toHaveCount(2);
+  await expect(page.locator("#libraryDialog input[type=file]")).toHaveCount(0);
+  await page.locator(".library-export").first().click();
+  const imageExport = page.getByRole("dialog", { name: "Export", exact: true });
+  await expect(imageExport.getByRole("radio")).toHaveCount(2);
+  const libraryBox = (await page.locator("#libraryDialog").boundingBox())!;
+  const exportBox = (await imageExport.boundingBox())!;
+  expect(exportBox.width).toBeLessThan(libraryBox.width);
+  await page.keyboard.press("Escape");
+  await expect(imageExport).toHaveCount(0);
+  await expect(
+    page.getByRole("dialog", { name: "Library", exact: true }),
+  ).toBeVisible();
+  await page.locator(".library-export").first().click();
+  const svgDownload = page.waitForEvent("download");
+  await imageExport
+    .getByRole("button", { name: "Export", exact: true })
+    .click();
+  expect((await svgDownload).suggestedFilename()).toMatch(/\.svg$/);
+  await expect(imageExport).toHaveCount(0);
   await page.screenshot({ path: "tmp/phone-character-panel.png" });
-  await page.getByRole("button", { name: "Close panel" }).click();
+  await page.getByRole("button", { name: "Close library" }).click();
   await page
     .getByRole("button", { name: "Export and copy", exact: true })
     .click();
   await expect(
     page.getByRole("dialog", { name: "Export and copy" }),
   ).toBeVisible();
-  const svgDownload = page.waitForEvent("download");
-  await page.locator("#exportSvg").click();
-  expect((await svgDownload).suggestedFilename()).toMatch(/\.svg$/);
+  await expect(page.locator("#exportSvg, #exportPng")).toHaveCount(0);
+  await expect(page.locator("#exportFont")).toBeEnabled();
   await page.getByRole("button", { name: "Close panel" }).click();
   expect(
     await page.evaluate(
