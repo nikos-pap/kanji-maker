@@ -52,6 +52,12 @@ export function validModel(value: unknown): GlyphModel {
       throw Error("Invalid stroke.");
     if (op.kind === "polygon" && op.points.length < 3)
       throw Error("A polygon needs at least three corners.");
+    if (
+      op.brushShape !== undefined &&
+      op.brushShape !== "round" &&
+      op.brushShape !== "square"
+    )
+      throw Error("Invalid brush shape.");
     for (const p of op.points)
       if (
         !Array.isArray(p) ||
@@ -66,6 +72,7 @@ export function validModel(value: unknown): GlyphModel {
       kind: op.kind as StrokeKind,
       width: op.width,
       points: clone(op.points),
+      ...(op.brushShape !== undefined ? { brushShape: op.brushShape } : {}),
     };
   });
   const originalPath = data.originalPath ?? data.basePath;

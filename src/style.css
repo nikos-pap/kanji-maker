@@ -44,14 +44,6 @@
   flex-direction: column;
   min-width: 0;
 }
-.library-label small {
-  font-size: 10px;
-  font-weight: 400;
-  color: var(--muted);
-}
-#libraryFontName {
-  overflow-wrap: anywhere;
-}
 .export-buttons button {
   min-width: 0;
 }
@@ -65,7 +57,8 @@ body {
   margin: 0;
 }
 button,
-input {
+input,
+select {
   font: inherit;
 }
 button {
@@ -161,11 +154,6 @@ h1 {
   letter-spacing: -0.6px;
   margin: 0;
 }
-header p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 12px;
-}
 h2 {
   font-size: 14px;
   margin: 0 0 14px;
@@ -214,12 +202,48 @@ main {
 }
 .editor-toolbar {
   border-block: 1px solid var(--border);
-  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  background: #fafbf8;
+}
+.tools-row,
+.tool-options {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  background: #fafbf8;
+  padding: 10px 16px;
+}
+.tool-options {
+  border-top: 1px solid var(--border);
+  gap: 16px;
+  background: #fff;
+}
+.tool-options .zoom-controls {
+  margin-left: auto;
+}
+.brush-shapes {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+.brush-shapes button {
+  padding: 4px 8px;
+  border-color: transparent;
+  font-size: 12px;
+}
+.brush-shapes button[aria-pressed="true"] {
+  color: var(--accent);
+  background: #e9eee7;
+}
+.guides-control {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  white-space: nowrap;
 }
 .tool-group {
   display: flex;
@@ -240,11 +264,6 @@ main {
   border-color: #b5c7b6;
   box-shadow: 0 1px 3px #1232;
 }
-.tool-icon {
-  font-size: 18px;
-  margin-right: 5px;
-  vertical-align: -1px;
-}
 .size-control {
   display: flex;
   align-items: center;
@@ -253,10 +272,6 @@ main {
 }
 .size-control input {
   width: 90px;
-}
-.size-control output {
-  min-width: 24px;
-  font-variant-numeric: tabular-nums;
 }
 .history-controls {
   display: flex;
@@ -309,28 +324,7 @@ main {
   stroke: #b5653c;
   stroke-width: 2;
   stroke-dasharray: 7 5;
-}
-.canvas-footer {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  font-size: 11px;
-  color: var(--muted);
-  padding: 11px 18px;
-  flex-wrap: wrap;
-}
-.canvas-footer p {
-  margin: 0;
-  flex: 1;
-}
-.canvas-footer label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
-}
-#editCount {
-  white-space: nowrap;
+  vector-effect: non-scaling-stroke;
 }
 aside {
   display: flex;
@@ -348,8 +342,8 @@ aside section {
   align-items: baseline;
   justify-content: center;
   gap: 7px;
-  min-height: 106px;
-  padding: 22px 0 12px;
+  min-height: 80px;
+  padding: 10px 0;
   border-radius: 8px;
   background: #f8faf6;
   font: 38px/1.5 serif;
@@ -528,17 +522,6 @@ dialog p {
   padding: 5px 9px;
   font-size: 12px;
 }
-.view-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 16px;
-  background: #fff;
-  border-bottom: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 11px;
-}
 .zoom-controls {
   display: flex;
   align-items: center;
@@ -605,18 +588,6 @@ dialog p {
   stroke: #fff;
   stroke-width: 1.5;
 }
-#polygonOverlay polygon {
-  fill: #cf6b4b22;
-  stroke: #b85e37;
-  stroke-width: 1.5;
-  vector-effect: non-scaling-stroke;
-}
-#polygonOverlay circle {
-  fill: #fff;
-  stroke: #b85e37;
-  stroke-width: 1.5;
-  vector-effect: non-scaling-stroke;
-}
 #brushCursor {
   vector-effect: non-scaling-stroke;
 }
@@ -626,6 +597,11 @@ dialog p {
 .canvas-surround {
   overflow: hidden;
 }
+
+.help-text {
+  overflow: hidden;
+}
+
 @media (min-width: 1500px) {
   .canvas-frame {
     width: min(100%, 680px);
@@ -637,11 +613,9 @@ dialog p {
     gap: 16px;
     padding-inline: 18px;
   }
-  .editor-toolbar {
+  .tools-row,
+  .tool-options {
     gap: 8px;
-  }
-  .history-controls {
-    margin-left: 0;
   }
   .character-bar {
     padding: 14px;
@@ -671,9 +645,6 @@ dialog p {
   header {
     padding: 18px 13px;
   }
-  .brand p {
-    display: none;
-  }
   .brand-mark {
     width: 42px;
     height: 42px;
@@ -702,46 +673,31 @@ dialog p {
   .character-bar {
     gap: 8px;
   }
-  .character-bar label {
-    width: 100%;
-  }
   .character-bar button {
     font-size: 12px;
-  }
-  .tool-icon {
-    display: none;
   }
   .size-control input {
     width: 70px;
   }
-  .canvas-footer {
-    gap: 8px;
-  }
-  .canvas-footer p {
-    flex-basis: 100%;
-  }
-  .view-toolbar > span {
-    max-width: 140px;
-  }
   .precision-bar {
     gap: 8px;
-  }
-  .precision-bar > span {
-    flex-basis: 100%;
   }
 }
 @media (max-width: 440px) {
   aside {
     display: flex;
   }
-  .editor-toolbar {
-    padding: 8px;
+  .tools-row,
+  .tool-options {
+    padding: 8px 10px;
   }
   .tool-group {
     width: 100%;
+    flex-wrap: nowrap;
   }
   .tool-group button {
-    flex: 1 1 20%;
+    flex: 1;
+    padding: 7px 4px;
     white-space: nowrap;
   }
   .history-controls {
@@ -749,9 +705,6 @@ dialog p {
   }
   #fontName {
     display: none;
-  }
-  .view-toolbar {
-    padding: 8px;
   }
   .zoom-controls button {
     padding: 3px 7px;

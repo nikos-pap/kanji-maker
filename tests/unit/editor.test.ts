@@ -43,6 +43,35 @@ describe("outline editing", () => {
   });
 });
 describe("library compatibility", () => {
+  it("preserves square tips and old polygon/round edits without changing legacy files", () => {
+    const oldStroke = { kind: "erase", width: 30, points: [[20, 20]] };
+    const squareStroke = {
+      kind: "draw",
+      width: 30,
+      brushShape: "square",
+      points: [[40, 40]],
+    };
+    const polygon = {
+      kind: "polygon",
+      width: 1,
+      points: [
+        [0, 0],
+        [20, 0],
+        [20, 20],
+      ],
+    };
+    const restored = validModel({
+      ...model,
+      operations: [oldStroke, squareStroke, polygon],
+    });
+    expect(restored.operations).toEqual([oldStroke, squareStroke, polygon]);
+    expect(() =>
+      validModel({
+        ...model,
+        operations: [{ ...squareStroke, brushShape: "triangle" }],
+      }),
+    ).toThrow("Invalid brush shape");
+  });
   const entries: LibraryEntry[] = [
     { id: crypto.randomUUID(), codePoint: 0xe050, model },
   ];

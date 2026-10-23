@@ -1,5 +1,6 @@
 import type { GlyphModel } from "../types";
 import { pathFor } from "../lib/geometry";
+import { BrushStroke } from "./BrushStroke";
 
 /** The same declarative SVG is used for editing, previews and exports. */
 export function Glyph({
@@ -41,14 +42,7 @@ export function Glyph({
           ) : op.kind === "polygon" ? (
             <path d={pathFor(op.points) + "Z"} fill="#000" />
           ) : (
-            <path
-              d={pathFor(op.points)}
-              fill="none"
-              stroke="#000"
-              strokeWidth={op.width}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+            <BrushStroke operation={op} />
           )}
         </mask>,
       );
@@ -57,14 +51,7 @@ export function Glyph({
       shape = (
         <g>
           {shape}
-          <path
-            d={pathFor(op.points, op.kind === "line")}
-            fill="none"
-            stroke="#000"
-            strokeWidth={op.width}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          <BrushStroke operation={op} />
         </g>
       );
   }

@@ -1,10 +1,12 @@
 export type Point = [number, number];
 export type StrokeKind = "erase" | "cut" | "polygon" | "draw" | "line";
-export type Tool = StrokeKind | "points" | "pan";
+export type Tool = Exclude<StrokeKind, "polygon"> | "points" | "pan";
+export type BrushShape = "round" | "square";
 export interface Operation {
   kind: StrokeKind;
   width: number;
   points: Point[];
+  brushShape?: BrushShape;
 }
 export interface GlyphModel {
   version: 1;

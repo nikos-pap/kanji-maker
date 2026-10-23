@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import type {
+  BrushShape,
   Camera,
   GlyphModel,
   Outline,
@@ -19,6 +20,7 @@ import {
   shiftedOutline,
 } from "../lib/geometry";
 import { Glyph } from "./Glyph";
+import { OutlineOverlay } from "./OutlineOverlay";
 
 type Drag = { pointer: number; start: Point } & (
   | { type: "pan"; camera: Camera }
@@ -34,124 +36,28 @@ type Props = {
   model: GlyphModel;
   tool: Tool;
   brush: number;
+  brushShape: BrushShape;
+  guides: boolean;
+  camera: Camera;
+  onCameraChange: (camera: Camera) => void;
   busy: boolean;
   onChange: (model: GlyphModel) => void;
   onCommit: (previous: GlyphModel) => void;
-  onPending: (pending: boolean) => void;
   onGesture: (active: boolean) => void;
   notify: (message: string, error?: boolean) => void;
 };
-export const hints: Record<Tool, string> = {
-  points:
-    "Squares are outline points; circles are curve handles. Drag, enter X/Y, or nudge with arrows (Shift: 10, Alt: 0.1).",
-  erase: "Drag to erase. The checkerboard shows transparent areas.",
-  cut: "Drag a rectangle around the part you want to remove.",
-  polygon:
-    "Click corners, then Apply cut or Enter. Click the first corner to close; Escape cancels.",
-  draw: "Drag to add a stroke. Reduce Size for finer details.",
-  line: "Drag to add a straight stroke. Hold Shift to snap its angle.",
-  pan: "Drag to move around the character. Scroll to zoom; Fit shows the whole character.",
-};
-
-function OutlineOverlay({
-  data,
-  selection,
-  unit,
-}: {
-  data: Outline;
-  selection: Selection | null;
-  unit: number;
-}) {
-  const handles = data.flatMap((contour, ci) =>
-    contour.flatMap((p, pi) => {
-      if (!p.values.length) return [];
-      const pair = p.values.length / 2 - 1,
-        [x, y] = p.values.slice(-2);
-      const active =
-        selection?.contour === ci &&
-        selection.command === pi &&
-        selection.pair === pair;
-      return [
-        <rect
-          key={`${ci}-${pi}`}
-          x={x - 3.5 * unit}
-          y={y - 3.5 * unit}
-          width={7 * unit}
-          height={7 * unit}
-          className={`anchor${active ? " active-point" : ""}`}
-          data-contour={ci}
-          data-command={pi}
-          data-pair={pair}
-        >
-          <title>
-            Outline point: {round(x)}, {round(y)}
-          </title>
-        </rect>,
-      ];
-    }),
-  );
-  return (
-    <g id="outlineOverlay">
-      {data.map((c, ci) => (
-        <path
-          key={ci}
-          d={outlineText([c])}
-          className={`outline-hit${selection?.contour === ci ? " selected" : ""}`}
-          data-contour={ci}
-        />
-      ))}
-      {selection &&
-        data[selection.contour]?.flatMap((p, pi, contour) => {
-          const previous = contour[pi - 1]?.values.slice(-2),
-            end = p.values.slice(-2);
-          if (
-            !["Q", "C"].includes(p.cmd) ||
-            !previous ||
-            (selection.command !== pi && selection.command !== pi - 1)
-          )
-            return [];
-          return Array.from({ length: p.values.length / 2 - 1 }, (_, pair) => {
-            const [x, y] = p.values.slice(pair * 2, pair * 2 + 2),
-              root = p.cmd === "C" && pair === 1 ? end : previous;
-            return (
-              <g key={`${pi}-${pair}`}>
-                <path
-                  d={`M${root[0]} ${root[1]}L${x} ${y}`}
-                  className="handle-line"
-                />
-                {p.cmd === "Q" && (
-                  <path
-                    d={`M${end[0]} ${end[1]}L${x} ${y}`}
-                    className="handle-line"
-                  />
-                )}
-                <circle
-                  cx={x}
-                  cy={y}
-                  r={4 * unit}
-                  className={`control-point${selection.command === pi && selection.pair === pair ? " active-point" : ""}`}
-                  data-contour={selection.contour}
-                  data-command={pi}
-                  data-pair={pair}
-                />
-              </g>
-            );
-          });
-        })}
-      {handles}
-    </g>
-  );
-}
-
 export function EditorCanvas(props: Props) {
   const {
     model,
     tool,
     brush,
+    brushShape,
+    guides,
+    camera,
+    onCameraChange,
     busy,
     onChange,
     onCommit,
-    onPending,
     onGesture,
     notify,
   } = props;
@@ -159,14 +65,10 @@ export function EditorCanvas(props: Props) {
     drag = useRef<Drag | null>(null),
     liveModel = useRef(model);
   liveModel.current = model;
-  const [camera, setCamera] = useState<Camera>({ x: 0, y: 0, zoom: 1 });
-  const [selection, setSelection] = useState<Selection | null>(null),
-    [polygon, setPolygon] = useState<Point[]>([]);
-  const [hover, setHover] = useState<Point | null>(null),
-    [cursor, setCursor] = useState<Point | null>(null);
+  const [selection, setSelection] = useState<Selection | null>(null);
+  const [cursor, setCursor] = useState<Point | null>(null);
   const [space, setSpace] = useState(false),
-    [panning, setPanning] = useState(false),
-    [guides, setGuides] = useState(true);
+    [panning, setPanning] = useState(false);
   const [width, setWidth] = useState(620);
   const spaceHeld = useRef(false),
     touches = useRef(new Map<number, Point>());
@@ -183,15 +85,18 @@ export function EditorCanvas(props: Props) {
     liveModel.current = next;
     onChange(next);
   };
-  const setView = useCallback((next: Camera) => {
-    const size = 1000 / next.zoom;
-    setCamera({
-      ...next,
-      x: clamp(next.x, 0, 1000 - size),
-      y: clamp(next.y, 0, 1000 - size),
-    });
-    setCursor(null);
-  }, []);
+  const setView = useCallback(
+    (next: Camera) => {
+      const size = 1000 / next.zoom;
+      onCameraChange({
+        ...next,
+        x: clamp(next.x, 0, 1000 - size),
+        y: clamp(next.y, 0, 1000 - size),
+      });
+      setCursor(null);
+    },
+    [onCameraChange],
+  );
   function zoomTo(value: number, anchor?: Point) {
     if (drag.current) return;
     const zoom = clamp(value, 1, 16),
@@ -242,27 +147,6 @@ export function EditorCanvas(props: Props) {
     if (svg.current?.hasPointerCapture(pointer))
       svg.current.releasePointerCapture(pointer);
   }
-  function finishPolygon() {
-    if (polygon.length < 3 || busy) return;
-    const area = polygon.reduce((sum, p, i) => {
-      const q = polygon[(i + 1) % polygon.length];
-      return sum + p[0] * q[1] - q[0] * p[1];
-    }, 0);
-    if (Math.abs(area) < 0.1) {
-      notify("Choose corners that enclose an area.", true);
-      return;
-    }
-    onCommit(model);
-    publish({
-      ...model,
-      operations: [
-        ...model.operations,
-        { kind: "polygon", width: 1, points: clone(polygon) },
-      ],
-    });
-    setPolygon([]);
-    setHover(null);
-  }
   function nudge(dx: number, dy: number) {
     if (!selection || !outline || busy || drag.current) return;
     const next = outlineText(shiftedOutline(outline, selection, dx, dy));
@@ -275,13 +159,8 @@ export function EditorCanvas(props: Props) {
     });
   }
   useEffect(() => {
-    setPolygon([]);
-    setHover(null);
     setCursor(null);
   }, [tool]);
-  useEffect(() => {
-    onPending(!!polygon.length);
-  }, [polygon.length, onPending]);
   useEffect(() => {
     const observer = new ResizeObserver((entries) =>
       setWidth(entries[0].contentRect.width || 620),
@@ -311,18 +190,9 @@ export function EditorCanvas(props: Props) {
         setSpace(true);
         setCursor(null);
       }
-      if (e.key === "Escape") {
-        if (drag.current) finish(drag.current.pointer, true);
-        else {
-          setPolygon([]);
-          setHover(null);
-        }
-      }
+      if (e.key === "Escape" && drag.current)
+        finish(drag.current.pointer, true);
       if (drag.current) return;
-      if (e.key === "Enter" && tool === "polygon") {
-        e.preventDefault();
-        finishPolygon();
-      }
       if (
         tool === "points" &&
         selection &&
@@ -412,25 +282,6 @@ export function EditorCanvas(props: Props) {
       };
       return;
     }
-    if (tool === "polygon") {
-      const p = position(e),
-        threshold = 7 * unit;
-      if (
-        polygon.length >= 3 &&
-        Math.hypot(p[0] - polygon[0][0], p[1] - polygon[0][1]) < threshold
-      ) {
-        finishPolygon();
-        return;
-      }
-      if (
-        !polygon.length ||
-        Math.hypot(p[0] - polygon.at(-1)![0], p[1] - polygon.at(-1)![1]) >
-          threshold
-      )
-        setPolygon([...polygon, p]);
-      setHover(null);
-      return;
-    }
     if (tool === "points") {
       const hit = (e.target as Element).closest<SVGElement>("[data-contour]");
       const picked: Selection | null = hit
@@ -470,7 +321,12 @@ export function EditorCanvas(props: Props) {
       ...model,
       operations: [
         ...model.operations,
-        { kind: tool as StrokeKind, width: brush, points: [position(e)] },
+        {
+          kind: tool as StrokeKind,
+          width: brush,
+          brushShape,
+          points: [position(e)],
+        },
       ],
     });
   }
@@ -499,7 +355,6 @@ export function EditorCanvas(props: Props) {
       return;
     }
     const current = drag.current;
-    if (tool === "polygon" && polygon.length) setHover(position(e));
     if (current?.type === "pan" && current.pointer === e.pointerId) {
       const unit = 1000 / (current.camera.zoom * width);
       setView({
@@ -567,21 +422,22 @@ export function EditorCanvas(props: Props) {
     finish(e.pointerId, cancel);
     if (!touches.current.size) pinch.current = null;
   }
-  const zooms = [...new Set([1, 1.5, 2, 3, 4, 8, 16, camera.zoom])].sort(
-    (a, b) => a - b,
-  );
-  const edited = model.originalPath && model.basePath !== model.originalPath;
+  const cut =
+    drag.current?.type === "stroke" && tool === "cut"
+      ? model.operations.at(-1)
+      : undefined;
+  const cutEnd = cut?.points.at(-1);
   return (
     <>
       {tool === "points" && (
         <div id="pointControls" className="precision-bar">
           <span id="pointDescription">
             {point
-              ? "Outline point · arrows to nudge"
+              ? "Point"
               : selection
-                ? "Drag the highlighted outline to move it."
+                ? "Outline"
                 : outline
-                  ? "Select an outline or a square point."
+                  ? "Select a point"
                   : "This imported outline cannot be point-edited."}
           </span>
           {(
@@ -638,65 +494,6 @@ export function EditorCanvas(props: Props) {
           </button>
         </div>
       )}
-      {tool === "polygon" && (
-        <div id="polygonControls" className="precision-bar">
-          <span>Click corners around the area to remove.</span>
-          <button
-            id="applyPolygon"
-            className="primary"
-            disabled={polygon.length < 3 || busy}
-            onClick={finishPolygon}
-          >
-            Apply cut
-          </button>
-          <button
-            id="cancelPolygon"
-            disabled={!polygon.length}
-            onClick={() => {
-              setPolygon([]);
-              setHover(null);
-            }}
-          >
-            Cancel
-          </button>
-        </div>
-      )}
-      <div className="view-toolbar" aria-label="Canvas view controls">
-        <span>Scroll to zoom · Space + drag to pan</span>
-        <div className="zoom-controls">
-          <button
-            id="zoomOut"
-            aria-label="Zoom out"
-            disabled={camera.zoom <= 1}
-            onClick={() => zoomTo(camera.zoom / 1.5)}
-          >
-            −
-          </button>
-          <select
-            id="zoomLevel"
-            aria-label="Canvas zoom"
-            value={camera.zoom}
-            onChange={(e) => zoomTo(Number(e.currentTarget.value))}
-          >
-            {zooms.map((z) => (
-              <option key={z} value={z}>
-                {Math.round(z * 100)}%
-              </option>
-            ))}
-          </select>
-          <button
-            id="zoomIn"
-            aria-label="Zoom in"
-            disabled={camera.zoom >= 16}
-            onClick={() => zoomTo(camera.zoom * 1.5)}
-          >
-            +
-          </button>
-          <button id="zoomFit" onClick={() => setView({ x: 0, y: 0, zoom: 1 })}>
-            Fit
-          </button>
-        </div>
-      </div>
       <div className="canvas-surround">
         <div id="canvasFrame" className="canvas-frame">
           <svg
@@ -715,12 +512,6 @@ export function EditorCanvas(props: Props) {
             onPointerCancel={(e) => endPointer(e, true)}
             onLostPointerCapture={(e) => finish(e.pointerId, true)}
             onPointerLeave={() => setCursor(null)}
-            onDoubleClick={(e) => {
-              if (tool === "polygon") {
-                e.preventDefault();
-                finishPolygon();
-              }
-            }}
           >
             <defs>
               <pattern
@@ -753,53 +544,38 @@ export function EditorCanvas(props: Props) {
                 unit={unit}
               />
             )}
-            <g id="polygonOverlay" pointerEvents="none">
-              {!!polygon.length && (
-                <>
-                  <polygon
-                    points={(hover ? [...polygon, hover] : polygon)
-                      .map((p) => p.join(","))
-                      .join(" ")}
-                  />
-                  {polygon.map(([x, y], i) => (
-                    <circle key={i} cx={x} cy={y} r={4 * unit} />
-                  ))}
-                </>
-              )}
-            </g>
+            {cut && cutEnd && cut.points.length > 1 && (
+              <rect
+                id="cutPreview"
+                pointerEvents="none"
+                x={Math.min(cut.points[0][0], cutEnd[0])}
+                y={Math.min(cut.points[0][1], cutEnd[1])}
+                width={Math.abs(cutEnd[0] - cut.points[0][0])}
+                height={Math.abs(cutEnd[1] - cut.points[0][1])}
+              />
+            )}
             <g id="pointerOverlay" pointerEvents="none">
-              {cursor && (
-                <circle
-                  id="brushCursor"
-                  cx={cursor[0]}
-                  cy={cursor[1]}
-                  r={brush / 2}
-                />
-              )}
+              {cursor &&
+                (brushShape === "square" ? (
+                  <rect
+                    id="brushCursor"
+                    x={cursor[0] - brush / 2}
+                    y={cursor[1] - brush / 2}
+                    width={brush}
+                    height={brush}
+                  />
+                ) : (
+                  <circle
+                    id="brushCursor"
+                    cx={cursor[0]}
+                    cy={cursor[1]}
+                    r={brush / 2}
+                  />
+                ))}
             </g>
           </svg>
         </div>
       </div>
-      <footer className="canvas-footer">
-        <p id="toolHint">{hints[tool]}</p>
-        <label>
-          <input
-            id="showGrid"
-            type="checkbox"
-            checked={guides}
-            onChange={(e) => setGuides(e.currentTarget.checked)}
-          />{" "}
-          Guides
-        </label>
-        <span id="editCount">
-          {[
-            model.operations.length ? `${model.operations.length} edits` : "",
-            edited ? "Outline edited" : "",
-          ]
-            .filter(Boolean)
-            .join(" · ") || "Original character"}
-        </span>
-      </footer>
     </>
   );
 }

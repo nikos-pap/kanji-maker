@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
+  BrushShape,
   GlyphModel,
   LibraryEntry,
   LibraryMeta,
@@ -79,9 +80,10 @@ export function useEditor() {
     [saved, setSaved] = useState(initial.saved);
   const [past, setPast] = useState<GlyphModel[]>([]),
     [future, setFuture] = useState<GlyphModel[]>([]);
-  const [tool, setTool] = useState<Tool>("erase"),
+  const [tool, setTool] = useState<Tool>("draw"),
     [brush, setBrush] = useState(45),
-    [pending, setPending] = useState(false);
+    [brushShape, setBrushShape] = useState<BrushShape>("round"),
+    [guides, setGuides] = useState(true);
   const [busy, setBusy] = useState(false),
     [character, setCharacter] = useState(initial.model.character),
     [fontLabel, setFontLabel] = useState("Included Japanese serif");
@@ -132,7 +134,7 @@ export function useEditor() {
     !!model.operations.length ||
     (!!model.originalPath && model.basePath !== model.originalPath);
   const family = familyName(meta),
-    disabled = busy || !model.basePath || pending;
+    disabled = busy || !model.basePath;
   function persistLibrary(
     next: LibraryEntry[],
     nextMeta: LibraryMeta,
@@ -186,13 +188,7 @@ export function useEditor() {
             customFont: false,
           };
         });
-        notify(
-          initial.warning ||
-            (initial.model.basePath
-              ? "Your previous character is ready."
-              : "Ready. Erase or draw to change the character."),
-          !!initial.warning,
-        );
+        notify(initial.warning, !!initial.warning);
       })
       .catch((error) => {
         if (!controller.signal.aborted)
@@ -216,8 +212,8 @@ export function useEditor() {
   }
   async function canReplace() {
     return (
-      (!edited && !pending) ||
-      (!!model.basePath && fingerprint(model) === saved && !pending) ||
+      !edited ||
+      (!!model.basePath && fingerprint(model) === saved) ||
       (await confirm(
         "Replace the current character?",
         "Save it to your library first if you want to keep this version.",
@@ -231,7 +227,6 @@ export function useEditor() {
     setSaved(entry ? fingerprint(next) : "");
     setPast([]);
     setFuture([]);
-    setPending(false);
     setSession((s) => s + 1);
   }
   async function loadCharacter() {
@@ -262,7 +257,7 @@ export function useEditor() {
         fontLabel,
         customFont: customFont.current,
       });
-      notify("Character loaded. Erase or draw to change its shape.");
+      notify("");
     } catch (error) {
       notify(errorText(error), true);
     }
@@ -298,7 +293,6 @@ export function useEditor() {
     setFuture((f) => [...f, clone(model)]);
     setModel(past[past.length - 1]);
     setPast((p) => p.slice(0, -1));
-    setPending(false);
     setSession((s) => s + 1);
   }
   function redo() {
@@ -306,7 +300,6 @@ export function useEditor() {
     setPast((p) => [...p, clone(model)]);
     setModel(future[future.length - 1]);
     setFuture((f) => f.slice(0, -1));
-    setPending(false);
     setSession((s) => s + 1);
   }
   function reset() {
@@ -317,7 +310,6 @@ export function useEditor() {
       basePath: model.originalPath || model.basePath,
       operations: [],
     });
-    setPending(false);
     setSession((s) => s + 1);
   }
   function selectTool(next: Tool) {
@@ -344,7 +336,6 @@ export function useEditor() {
           n: "points",
           e: "erase",
           r: "cut",
-          p: "polygon",
           d: "draw",
           l: "line",
           h: "pan",
@@ -593,8 +584,10 @@ export function useEditor() {
     copyForDocument,
     copyCharacter,
     currentEntry,
-    pending,
-    setPending,
+    brushShape,
+    setBrushShape,
+    guides,
+    setGuides,
     session,
     onGesture,
     notify,

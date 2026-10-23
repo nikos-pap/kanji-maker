@@ -24,13 +24,25 @@ const draft = (page: Page) =>
     JSON.parse(localStorage.getItem("kanji-maker.draft.v1")!),
   );
 
-test("drawing, undo, redo, polygon cuts, points and zoom use the React editor", async ({
+test("drawing, undo, redo, visible area cuts, points and zoom", async ({
   page,
 }) => {
   await expect(page).toHaveURL(/\/kanji-maker\/$/);
   const box = (await page.locator("#canvas").boundingBox())!;
-  const clickAt = (x: number, y: number) =>
-    page.mouse.click(box.x + box.width * x, box.y + box.height * y);
+  await expect(page.locator(".tool-group button")).toHaveText([
+    "Draw",
+    "Erase",
+    "Cut area",
+    "Line",
+    "Pan",
+    "Points",
+  ]);
+  await expect(page.locator('[data-tool="polygon"]')).toHaveCount(0);
+  await expect(page.locator(".editor-toolbar #showGrid")).toBeChecked();
+  await page.locator("#showGrid").uncheck();
+  await expect(page.locator("#grid")).toHaveCount(0);
+  await page.locator("#showGrid").check();
+  await page.locator('[data-brush-shape="square"]').click();
   await page.locator('[data-tool="draw"]').click();
   await page.mouse.move(box.x + box.width * 0.2, box.y + box.height * 0.2);
   await page.mouse.down();
@@ -49,15 +61,21 @@ test("drawing, undo, redo, polygon cuts, points and zoom use the React editor", 
   await expect
     .poll(async () => (await draft(page)).model.operations[0].kind)
     .toBe("draw");
-  await page.locator('[data-tool="polygon"]').click();
-  await clickAt(0.2, 0.2);
-  await clickAt(0.4, 0.2);
-  await clickAt(0.3, 0.4);
-  await expect(page.locator("#exportSvg")).toBeDisabled();
-  await page.locator("#applyPolygon").click();
+  expect((await draft(page)).model.operations[0].brushShape).toBe("square");
+  await page.locator('[data-tool="cut"]').click();
+  await page.mouse.move(box.x + box.width * 0.2, box.y + box.height * 0.2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.4, box.y + box.height * 0.4, {
+    steps: 4,
+  });
+  await expect(page.locator("#cutPreview")).toBeVisible();
+  await expect(page.locator("#cutPreview")).toHaveAttribute("width", /[1-9]/);
+  await page.screenshot({ path: "tmp/cut-preview.png", fullPage: true });
+  await page.mouse.up();
+  await expect(page.locator("#cutPreview")).toHaveCount(0);
   await expect
     .poll(async () => (await draft(page)).model.operations.at(-1).kind)
-    .toBe("polygon");
+    .toBe("cut");
   await page.locator('[data-tool="points"]').click();
   await page.locator("#outlineOverlay .anchor").first().click();
   const oldPath = (await draft(page)).model.basePath;
@@ -89,6 +107,7 @@ test("drawing, undo, redo, polygon cuts, points and zoom use the React editor", 
       () => document.documentElement.scrollWidth <= innerWidth + 1,
     ),
   ).toBe(true);
+  await page.screenshot({ path: "tmp/editor-mobile.png", fullPage: true });
 });
 
 test("library survives reload and exports JSON, SVG, PNG, font and Word", async ({
@@ -151,13 +170,11 @@ test("imports compatible backups with stable codes and loads a selected font", a
     ],
   };
   const importBackup = () =>
-    page
-      .locator("#projectFile")
-      .setInputFiles({
-        name: "library.json",
-        mimeType: "application/json",
-        buffer: Buffer.from(JSON.stringify(backup)),
-      });
+    page.locator("#projectFile").setInputFiles({
+      name: "library.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify(backup)),
+    });
   await importBackup();
   await expect(page.locator("#library .library-item")).toHaveCount(1);
   let stored = await page.evaluate(() =>

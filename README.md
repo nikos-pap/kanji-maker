@@ -18,7 +18,8 @@ in the browser during development.
 
 | Source                                 | Purpose                                                        |
 | -------------------------------------- | -------------------------------------------------------------- |
-| `src/App.tsx`                          | React page, toolbar, library, export controls and dialogs      |
+| `src/App.tsx`                          | Page composition and shared editor wiring                      |
+| `src/components/`                      | Character form, toolbar, panels, preview, header and dialogs   |
 | `src/components/EditorCanvas.tsx`      | React SVG canvas, pointer gestures, outline points and zoom    |
 | `src/components/Glyph.tsx`             | Shared React glyph rendering for canvas, previews and exports  |
 | `src/hooks/useEditor.ts`               | Editor state, undo/redo, persistence, fonts and export actions |
@@ -35,10 +36,10 @@ in the browser during development.
 
 ```text
 src/
-  components/       React canvas and glyph components
+  components/       Workspace, controls, panels, canvas and dialogs
   hooks/            Editor state and actions
   lib/              Geometry, persistence, font and export utilities
-  App.tsx           Application layout and controls
+  App.tsx           Page composition and shared editor wiring
   main.tsx          React entry point
   style.css         Styles
   types.ts          Shared models
@@ -59,6 +60,24 @@ Commit the source, assets, tests, configuration, lockfile and rebuilt `docs/`.
 The shared WebStorm files are explicitly allowed in `.gitignore`; personal IDE
 state, dependencies, scratch files, environment files and test reports are ignored.
 Keep personal library backups outside the repository or in the ignored `tmp/` folder.
+
+## Phone layout
+
+Phones use a viewport-sized canvas view without a scrolling page. The top bar
+opens character selection and the library, then provides undo/redo, Save, Import
+and Export. Save uses the current name; open Export to change the name or copy
+the character. Character/library and export controls open in dismissible panels.
+Only a panel's contents scroll when needed.
+
+Tap the floating tool button, then choose Draw, Erase, Cut area, Line, Pan or
+Points. The same picker includes a Round/Square tip toggle and closes after a
+choice. The vertical slider adjusts brush size; the horizontal slider adjusts
+zoom. Fit and Guides sit beside zoom. Pinch zoom and two-finger gestures use the
+same drawing canvas as desktop. Compact landscape uses a two-column tool picker.
+
+The phone components are in `src/components/mobile/`; `src/mobile.css` controls
+the phone layout. `src/hooks/useCompactLayout.ts` selects the layout while the
+shared editor state preserves the current character across viewport changes.
 
 ## WebStorm
 
@@ -168,12 +187,21 @@ contours. SVG keeps the original vector curves and masks.
 
 Use **Points** for anchors and curve handles; move a connected contour by dragging
 its boundary. Enter X/Y coordinates or nudge with arrows (Shift: 10 units,
-Alt: 0.1). A connected outline may contain several strokes. Erase, rectangle cut
-and polygon cut remove areas; Draw and Line add strokes. Undo reverses edits.
+Alt: 0.1). A connected outline may contain several strokes.
+
+The tool order is **Draw, Erase, Cut area, Line, Pan, Points**. Draw, Erase and
+Line share the **Round / Square** brush setting and Size. Square uses an
+axis-aligned square tip, including on diagonal strokes. Cut area shows a live
+rectangle while dragging; release to apply, or press Escape to cancel. Brush
+shapes are retained in saved characters, backups and exports. Older backups,
+including existing polygon cuts, remain readable.
+
+Guides, brush settings, zoom and Fit are grouped above the canvas. Usage hints
+are available in button tooltips and Help.
 
 Wheel zoom follows the pointer. Space+drag, middle mouse drag or Pan moves the
 canvas; touch supports pinch zoom. Fit shows the whole character. Only the canvas
-zooms. Shortcuts: N/E/R/P/D/L/H select tools, 0 fits, Ctrl+Z undoes,
+zooms. Shortcuts: D/E/R/L/H/N select tools, 0 fits, Ctrl+Z undoes,
 Ctrl+Shift+Z redoes. Escape cancels an unfinished cut or point drag.
 
 ## Third-party licences
