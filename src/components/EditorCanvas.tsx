@@ -21,8 +21,8 @@ import {
 } from "../lib/geometry";
 import { Glyph } from "./Glyph";
 import { OutlineOverlay } from "./OutlineOverlay";
-import { anchoredCamera, canvasViewport, zoomCamera } from "../lib/viewport";
-import type { ViewportSize } from "../lib/viewport";
+import { advancePinch, canvasViewport, zoomCamera } from "../lib/viewport";
+import type { PinchState, ViewportSize } from "../lib/viewport";
 
 type Drag = { pointer: number; start: Point } & (
   | { type: "pan"; camera: Camera }
@@ -81,11 +81,7 @@ export function EditorCanvas(props: Props) {
   });
   const spaceHeld = useRef(false),
     touches = useRef(new Map<number, Point>());
-  const pinch = useRef<{
-    zoom: number;
-    distance: number;
-    anchor: Point;
-  } | null>(null);
+  const pinch = useRef<PinchState | null>(null);
   const outline = useMemo(() => parseOutline(model.basePath), [model.basePath]),
     point = activePoint(outline, selection);
   const view = canvasViewport(camera, bounds),
@@ -368,17 +364,18 @@ export function EditorCanvas(props: Props) {
       const [a, b] = [...touches.current.values()],
         rect = svg.current!.getBoundingClientRect(),
         start = pinch.current;
-      const zoom = clamp(
-        (start.zoom * Math.hypot(a[0] - b[0], a[1] - b[1])) / start.distance,
-        bounded ? 0.25 : 1,
-        16,
-      );
-      setView(
-        anchoredCamera(zoom, bounds, start.anchor, [
+      const next = advancePinch(
+        start,
+        bounds,
+        Math.hypot(a[0] - b[0], a[1] - b[1]),
+        [
           ((a[0] + b[0]) / 2 - rect.left) / rect.width,
           ((a[1] + b[1]) / 2 - rect.top) / rect.height,
-        ]),
+        ],
+        bounded,
       );
+      pinch.current = next.pinch;
+      setView(next.camera);
       return;
     }
     const current = drag.current;

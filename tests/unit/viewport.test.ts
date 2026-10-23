@@ -4,7 +4,9 @@ import {
   zoomCamera,
   anchoredCamera,
   boundedCamera,
+  advancePinch,
 } from "../../src/lib/viewport";
+import type { PinchState, ViewportSize } from "../../src/lib/viewport";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Glyph } from "../../src/components/Glyph";
@@ -97,6 +99,86 @@ describe("expanded drawing viewport", () => {
     ).toHaveLength(2);
   });
 });
+
+describe("pinch constraint transitions", () => {
+  it("opens the pan range continuously rather than snapping to a latent offset", () => {
+    for (const bounds of [
+      { width: 390, height: 526.5 },
+      { width: 526.5, height: 390 },
+    ]) {
+      for (const offset of [-10000, 10000]) {
+        const before = canvasViewport(
+          boundedCamera({ x: offset, y: offset, zoom: 1.3499 }, bounds),
+          bounds,
+        );
+        const after = canvasViewport(
+          boundedCamera({ x: offset, y: offset, zoom: 1.3501 }, bounds),
+          bounds,
+        );
+        expect(
+          Math.abs(-after.x / after.unit + before.x / before.unit),
+        ).toBeLessThan(0.1);
+        expect(
+          Math.abs(-after.y / after.unit + before.y / before.unit),
+        ).toBeLessThan(0.1);
+      }
+    }
+  });
+  it("crosses the 135% fit threshold smoothly in either orientation and direction", () => {
+    for (const [width, height, axis] of [
+      [390, 526.5, 1],
+      [526.5, 390, 0],
+    ]) {
+      const bounds: ViewportSize = { width, height };
+      const fraction: [number, number] = [0.25, 0.25];
+      const initial = canvasViewport(fit, bounds);
+      let state: PinchState = {
+        zoom: 1,
+        distance: 100,
+        anchor: [
+          initial.x + fraction[0] * initial.width,
+          initial.y + fraction[1] * initial.height,
+        ],
+      };
+      let previousEdge =
+        axis === 0 ? -initial.x / initial.unit : -initial.y / initial.unit;
+      const sequence = [
+        ...Array.from({ length: 101 }, (_, i) => 1 + i * 0.005),
+        ...Array.from({ length: 100 }, (_, i) => 1.495 - i * 0.005),
+      ];
+      for (const zoom of sequence) {
+        const next = advancePinch(state, bounds, zoom * 100, fraction, true);
+        const view = canvasViewport(next.camera, bounds);
+        const edge = axis === 0 ? -view.x / view.unit : -view.y / view.unit;
+        expect(Math.abs(edge - previousEdge)).toBeLessThan(2);
+        expect(next.camera.zoom).toBeCloseTo(zoom);
+        previousEdge = edge;
+        state = next.pinch;
+      }
+    }
+  });
+  it("does not release blocked panning when a fitting axis becomes pannable", () => {
+    const bounds = { width: 390, height: 526.5 };
+    const initial = canvasViewport(fit, bounds);
+    const state: PinchState = { zoom: 1, distance: 100, anchor: [500, 500] };
+    const held = advancePinch(state, bounds, 134.99, [0.5, 0.8], true);
+    const next = advancePinch(held.pinch, bounds, 135.01, [0.5, 0.8], true);
+    const before = canvasViewport(held.camera, bounds);
+    const after = canvasViewport(next.camera, bounds);
+    expect(
+      Math.abs(-after.y / after.unit + before.y / before.unit),
+    ).toBeLessThan(1);
+    expect(initial.height / initial.unit).toBeCloseTo(bounds.height);
+  });
+  it("responds immediately when reversing a pinch at the maximum zoom", () => {
+    const bounds = { width: 390, height: 844 };
+    const state: PinchState = { zoom: 16, distance: 100, anchor: [500, 500] };
+    const held = advancePinch(state, bounds, 200, [0.5, 0.5], true);
+    const reversed = advancePinch(held.pinch, bounds, 190, [0.5, 0.5], true);
+    expect(held.camera.zoom).toBe(16);
+    expect(reversed.camera.zoom).toBeCloseTo(15.2);
+  });
+});
 describe("bounded phone camera", () => {
   const portrait = { width: 366, height: 700 };
   it("supports zoom through 1600% and locks movement at 100% or below", () => {
@@ -118,7 +200,7 @@ describe("bounded phone camera", () => {
     expect(view.y).toBeLessThan(0);
     expect(view.y + view.height).toBeGreaterThan(1000);
   });
-  it("stops inward-moving edges at their original 100% positions, without cropping to that square", () => {
+  it("keeps inward-moving edges outside the 100% limits without cropping to that square", () => {
     for (const bounds of [portrait, { width: 820, height: 246 }]) {
       const original = canvasViewport(fit, bounds);
       const leftTop = canvasViewport(
@@ -129,17 +211,17 @@ describe("bounded phone camera", () => {
         boundedCamera({ x: 10000, y: 10000, zoom: 4 }, bounds),
         bounds,
       );
-      expect(-leftTop.x / leftTop.unit).toBeCloseTo(
-        -original.x / original.unit,
+      expect(-leftTop.x / leftTop.unit).toBeLessThanOrEqual(
+        -original.x / original.unit + 1e-8,
       );
-      expect(-leftTop.y / leftTop.unit).toBeCloseTo(
-        -original.y / original.unit,
+      expect(-leftTop.y / leftTop.unit).toBeLessThanOrEqual(
+        -original.y / original.unit + 1e-8,
       );
-      expect((1000 - rightBottom.x) / rightBottom.unit).toBeCloseTo(
-        (1000 - original.x) / original.unit,
+      expect((1000 - rightBottom.x) / rightBottom.unit).toBeGreaterThanOrEqual(
+        (1000 - original.x) / original.unit - 1e-8,
       );
-      expect((1000 - rightBottom.y) / rightBottom.unit).toBeCloseTo(
-        (1000 - original.y) / original.unit,
+      expect((1000 - rightBottom.y) / rightBottom.unit).toBeGreaterThanOrEqual(
+        (1000 - original.y) / original.unit - 1e-8,
       );
       expect(leftTop.width / leftTop.height).toBeCloseTo(
         bounds.width / bounds.height,
@@ -194,19 +276,23 @@ describe("full-screen phone rendering", () => {
     expect(view.height / view.unit).toBeCloseTo(screen.height);
   });
   it("limits inward movement independently of the larger render surface", () => {
-    const original = canvasViewport(fit, screen);
     for (const offset of [-10000, 10000]) {
       const view = canvasViewport(
         boundedCamera({ x: offset, y: offset, zoom: 4 }, screen),
         screen,
       );
       const edge = offset < 0 ? 0 : 1000;
-      expect((edge - view.x) / view.unit).toBeCloseTo(
-        (edge - original.x) / original.unit,
-      );
-      expect((edge - view.y) / view.unit).toBeCloseTo(
-        (edge - original.y) / original.unit,
-      );
+      if (edge === 0) {
+        expect((edge - view.x) / view.unit).toBeCloseTo(screen.fit.x);
+        expect((edge - view.y) / view.unit).toBeCloseTo(screen.fit.y);
+      } else {
+        expect((edge - view.x) / view.unit).toBeCloseTo(
+          screen.fit.x + screen.fit.width,
+        );
+        expect((edge - view.y) / view.unit).toBeCloseTo(
+          screen.fit.y + screen.fit.height,
+        );
+      }
       expect(view.height / view.unit).toBeCloseTo(844);
     }
   });

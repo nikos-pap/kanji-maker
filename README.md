@@ -80,7 +80,9 @@ At 100% the printable square uses the full phone width (or the available height
 in landscape) and is centered above the controls. Zoom
 supports up to 1600% and uses the entire rectangular drawing viewport. Pinch to
 zoom and pan; an axis stays centered while the square fits on that axis. Once it
-no longer fits, an edge moving inward stops at its original 100% position.
+no longer fits, its pan range opens gradually and inward-moving edges stop at
+the fit area. Pinch steps use the previous visible position so blocked movement
+cannot accumulate.
 The fit area only controls sizing and movement. Drawing fills the screen and
 clips only at its outer boundary; toolbars are overlaid on top. Tap Fit/Zoom to return to 100%. The brush number is surrounded by the
 selected tip shape; zoom has fit corners around its percentage. Both adjustment

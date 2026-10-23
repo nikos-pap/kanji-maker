@@ -311,3 +311,39 @@ test("zoomed artwork paints outside the fit area all the way to the screen bound
   );
   expect(hit).toEqual([true, true, true, true]);
 });
+
+test("off-center pinch crosses the fitting-axis boundary without teleporting", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  const print = (await page.locator("#printBounds").boundingBox())!;
+  const topbar = (await page.locator(".phone-topbar").boundingBox())!;
+  const controls = (await page.locator(".phone-view-actions").boundingBox())!;
+  const threshold = (controls.y - 12 - topbar.y - topbar.height) / print.width;
+  const x = print.x + print.width / 2,
+    y = print.y + print.height / 4;
+  const session = await page.context().newCDPSession(page);
+  const points = (zoom: number) => [
+    { x: x - 40 * zoom, y, id: 1 },
+    { x: x + 40 * zoom, y, id: 2 },
+  ];
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: points(1),
+  });
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchMove",
+    touchPoints: points(threshold - 0.002),
+  });
+  const before = (await page.locator("#printBounds").boundingBox())!;
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchMove",
+    touchPoints: points(threshold + 0.002),
+  });
+  const after = (await page.locator("#printBounds").boundingBox())!;
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+  expect(Math.abs(after.y - before.y)).toBeLessThan(4);
+});

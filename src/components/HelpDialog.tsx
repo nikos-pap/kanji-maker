@@ -14,10 +14,10 @@ export function HelpDialog({ close }: { close: () => void }) {
           Scroll over the canvas to zoom around the pointer. Hold Space and drag
           or use the middle mouse button. Fit shows the whole character. Pinch
           with two fingers on a touch screen. On phones, zoom goes up to 1600%;
-          inward-moving edges stop at their original 100% positions. An axis
-          stays centered while the box fits. Tap Fit/Zoom to reset or drag to
-          adjust. The adjacent brush button works the same way and shows the tip
-          shape; tapping it resets the size to 45.
+          inward-moving edges stop at the fit area. An axis stays centered while
+          the box fits, then its pan range opens gradually. Tap Fit/Zoom to
+          reset or drag to adjust. The adjacent brush button works the same way
+          and shows the tip shape; tapping it resets the size to 45.
         </p>
         <p>
           Points edits the original font outline. Squares are outline points;
