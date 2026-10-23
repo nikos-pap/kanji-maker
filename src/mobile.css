@@ -129,9 +129,6 @@ body:has(.phone-screen) {
   display: grid;
   place-items: center;
   padding: 0;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
   color: #fff;
   background: var(--accent);
 }
@@ -253,15 +250,19 @@ body:has(.phone-screen) #status {
   gap: 8px;
   z-index: 3;
 }
+.phone-view-actions button,
+.phone-tools-toggle {
+  width: 44px;
+  min-width: 44px;
+  height: 48px;
+  border-radius: 14px;
+}
 .phone-view-actions button {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
-  min-width: 44px;
-  height: 48px;
   padding: 0 10px;
-  border-radius: 14px;
   border: 1px solid #d3dfd4;
   background: #fffffff0;
   box-shadow: 0 2px 8px #18322412;
@@ -273,11 +274,7 @@ body:has(.phone-screen) #status {
 .phone-view-actions .drag-adjust-button {
   touch-action: none;
   cursor: ns-resize;
-  width: 48px;
-  min-width: 48px;
-  height: 48px;
   padding: 0;
-  border-radius: 6px;
 }
 .adjust-value {
   width: 44px;

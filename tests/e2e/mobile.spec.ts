@@ -68,9 +68,15 @@ test("phone canvas and controls fit the viewport in portrait and landscape", asy
     expect(canvas.width).toBeCloseTo(width);
     expect(canvas.height).toBeCloseTo(height);
     if (width < height) expect(print.width).toBeCloseTo(width);
-    for (const button of await page.locator(".drag-adjust-button").all()) {
+    const guide = (await page
+      .getByRole("button", { name: "Guides", exact: true })
+      .boundingBox())!;
+    for (const button of await page
+      .locator(".phone-view-actions button, #phoneTools")
+      .all()) {
       const box = (await button.boundingBox())!;
-      expect(box.width).toBeCloseTo(box.height);
+      expect(box.width).toBeCloseTo(guide.width);
+      expect(box.height).toBeCloseTo(guide.height);
     }
     await page.locator("#phoneTools").click();
     await expect(page.locator("#phoneToolPalette [data-tool]")).toHaveText([

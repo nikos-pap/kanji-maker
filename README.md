@@ -86,7 +86,7 @@ cannot accumulate.
 The fit area only controls sizing and movement. Drawing fills the screen and
 clips only at its outer boundary; toolbars are overlaid on top. Tap Fit/Zoom to return to 100%. The brush number is surrounded by the
 selected tip shape; zoom has fit corners around its percentage. Both adjustment
-buttons are 48 x 48 squares. Exports remain
+buttons and the tool picker share the leftmost Guides button's shape. Exports remain
 cropped to the printable square.
 
 The phone components are in `src/components/mobile/`; `src/mobile.css` controls
