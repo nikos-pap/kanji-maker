@@ -71,13 +71,19 @@ Only a panel's contents scroll when needed.
 
 Tap the floating tool button, then choose Draw, Erase, Cut area, Line or Points.
 The same picker includes a Round/Square tip toggle and closes after a choice.
-Two arc dials at the bottom adjust brush size and zoom: drag along an arc, or
-focus it and use arrow keys. Fit and Guides sit at the upper right. Pan is a
-two-finger gesture rather than a tool. Compact landscape uses a two-column picker.
+The bottom row has Guides, Brush size and Fit/Zoom. Tap Brush size to reset to
+45; drag right/up to increase and left/down to decrease. Its icon shows the
+Round/Square tip. Tap Fit/Zoom to reset the view, or drag to adjust zoom. Both
+buttons also support arrow keys. Compact landscape uses a two-column picker.
 
-The drawing viewport fills the available width and height. The checkerboard square
-marks the printable character area without clipping the editor artwork; zoom can
-use the surrounding space. Exports remain cropped to the printable square.
+At 100% the printable square is centered in the space above the controls. Zoom
+supports up to 1600% and uses the entire rectangular drawing viewport. Pinch to
+zoom and pan; an axis stays centered while the square fits on that axis. Once it
+no longer fits, an edge moving inward stops at its original 100% position.
+Artwork remains visible outside that original square, up to the actual viewport
+boundary. Tap Fit/Zoom to return to 100%. The brush number is surrounded by the
+selected tip shape; zoom has fit corners around its percentage. Exports remain
+cropped to the printable square.
 
 The phone components are in `src/components/mobile/`; `src/mobile.css` controls
 the phone layout. `src/hooks/useCompactLayout.ts` selects the layout while the

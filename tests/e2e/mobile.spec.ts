@@ -45,7 +45,6 @@ test("phone canvas and controls fit the viewport in portrait and landscape", asy
     for (const selector of [
       ".phone-topbar",
       "#canvas",
-      ".phone-dials",
       ".phone-view-actions",
       "#phoneTools",
     ]) {
@@ -55,6 +54,15 @@ test("phone canvas and controls fit the viewport in portrait and landscape", asy
       expect(bounds.x + bounds.width).toBeLessThanOrEqual(width + 1);
       expect(bounds.y + bounds.height).toBeLessThanOrEqual(height + 1);
     }
+    const print = (await page.locator("#printBounds").boundingBox())!;
+    const canvas = (await page.locator("#canvas").boundingBox())!;
+    const controls = (await page.locator(".phone-view-actions").boundingBox())!;
+    expect(print.x).toBeGreaterThanOrEqual(canvas.x - 1);
+    expect(print.x + print.width).toBeLessThanOrEqual(
+      canvas.x + canvas.width + 1,
+    );
+    expect(print.y).toBeGreaterThanOrEqual(canvas.y - 1);
+    expect(print.y + print.height).toBeLessThan(controls.y);
     await page.locator("#phoneTools").click();
     await expect(page.locator("#phoneToolPalette [data-tool]")).toHaveText([
       "Draw",
@@ -79,7 +87,7 @@ test("phone canvas and controls fit the viewport in portrait and landscape", asy
   await page.screenshot({ path: "tmp/phone-portrait.png" });
 });
 
-test("two-tap tools, brush shape, dials and touch gestures edit without scrolling", async ({
+test("two-tap tools, drag buttons and touch gestures edit without scrolling", async ({
   page,
 }) => {
   for (const tool of ["Erase", "Cut area", "Line", "Points", "Draw"]) {
@@ -94,38 +102,52 @@ test("two-tap tools, brush shape, dials and touch gestures edit without scrollin
   await page.locator("#phoneTools").click();
   await page.getByRole("switch", { name: "Square brush" }).click();
   await expect(page.locator("#phoneToolPalette")).toHaveCount(0);
-  await page.getByRole("slider", { name: "Brush size", exact: true }).focus();
-  const dial = (await page
-    .getByRole("slider", { name: "Brush size", exact: true })
-    .boundingBox())!;
+  const brush = page.getByRole("button", { name: "Brush size", exact: true });
+  const fitButton = page.getByRole("button", {
+    name: "Fit canvas / Zoom",
+    exact: true,
+  });
+  const buttonBounds = (await brush.boundingBox())!;
   await page.mouse.move(
-    dial.x + (dial.width * 16) / 120,
-    dial.y + (dial.height * 62) / 88,
+    buttonBounds.x + buttonBounds.width / 2,
+    buttonBounds.y + buttonBounds.height / 2,
   );
   await page.mouse.down();
   await page.mouse.move(
-    dial.x + dial.width / 2,
-    dial.y + (dial.height * 18) / 88,
+    buttonBounds.x + buttonBounds.width / 2,
+    buttonBounds.y - 100,
     { steps: 8 },
   );
   await page.mouse.up();
-  const changedSize = Number(
-    await page
-      .getByRole("slider", { name: "Brush size", exact: true })
-      .getAttribute("aria-valuenow"),
+  expect(Number(await brush.getAttribute("data-value"))).toBeGreaterThan(90);
+  await brush.click();
+  await expect(brush).toHaveAttribute("data-value", "45");
+  await brush.focus();
+  await page.keyboard.press("End");
+  await expect(brush).toHaveAttribute("data-value", "160");
+  await expect(
+    brush.locator('.adjust-value[data-shape="square"] text'),
+  ).toHaveText("160");
+  await fitButton.focus();
+  await page.keyboard.press("End");
+  await expect(fitButton).toHaveAttribute("data-value", "1600%");
+  await fitButton.click();
+  const zoomBounds = (await fitButton.boundingBox())!;
+  await page.mouse.move(
+    zoomBounds.x + zoomBounds.width / 2,
+    zoomBounds.y + zoomBounds.height / 2,
   );
-  expect(changedSize).toBeGreaterThan(75);
-  expect(changedSize).toBeLessThan(85);
-  await page.keyboard.press("End");
-  await expect(
-    page.getByRole("slider", { name: "Brush size", exact: true }),
-  ).toHaveAttribute("aria-valuenow", "160");
-  await page.getByRole("slider", { name: "Zoom", exact: true }).focus();
-  await page.keyboard.press("End");
-  await expect(
-    page.getByRole("slider", { name: "Zoom", exact: true }),
-  ).toHaveAttribute("aria-valuetext", "1600%");
-  await page.getByRole("button", { name: "Fit canvas" }).click();
+  await page.mouse.down();
+  await page.mouse.move(
+    zoomBounds.x - 100,
+    zoomBounds.y + zoomBounds.height / 2,
+    { steps: 8 },
+  );
+  await page.mouse.up();
+  expect(await fitButton.getAttribute("data-value")).not.toBe("100%");
+  expect(await page.evaluate(() => getSelection()?.toString())).toBe("");
+  await fitButton.click();
+  await expect(fitButton).toHaveAttribute("data-value", "100%");
   const fitted = (await page.locator("#canvas").getAttribute("viewBox"))!
     .split(" ")
     .map(Number);
@@ -161,7 +183,9 @@ test("two-tap tools, brush shape, dials and touch gestures edit without scrollin
     )
     .toBeLessThan(1000);
   expect((await draft(page)).model.operations).toHaveLength(0);
-  await page.getByRole("button", { name: "Fit canvas" }).click();
+  await page
+    .getByRole("button", { name: "Fit canvas / Zoom", exact: true })
+    .click();
   await page.touchscreen.tap(x, y);
   await expect
     .poll(async () => (await draft(page)).model.operations.length)

@@ -22,6 +22,7 @@ import {
 import { Glyph } from "./Glyph";
 import { OutlineOverlay } from "./OutlineOverlay";
 import { anchoredCamera, canvasViewport, zoomCamera } from "../lib/viewport";
+import type { ViewportSize } from "../lib/viewport";
 
 type Drag = { pointer: number; start: Point } & (
   | { type: "pan"; camera: Camera }
@@ -40,6 +41,8 @@ type Props = {
   brushShape: BrushShape;
   guides: boolean;
   camera: Camera;
+  bounded?: boolean;
+  onViewportSize?: (bounds: ViewportSize) => void;
   onCameraChange: (camera: Camera) => void;
   busy: boolean;
   onChange: (model: GlyphModel) => void;
@@ -55,6 +58,8 @@ export function EditorCanvas(props: Props) {
     brushShape,
     guides,
     camera,
+    bounded = false,
+    onViewportSize,
     onCameraChange,
     busy,
     onChange,
@@ -100,6 +105,7 @@ export function EditorCanvas(props: Props) {
         camera,
         value,
         anchor || (tool === "points" && point) || undefined,
+        bounded ? 0.25 : 1,
       ),
     );
   }
@@ -153,15 +159,17 @@ export function EditorCanvas(props: Props) {
     setCursor(null);
   }, [tool]);
   useEffect(() => {
-    const observer = new ResizeObserver(([entry]) =>
-      setBounds({
+    const observer = new ResizeObserver(([entry]) => {
+      const size = {
         width: entry.contentRect.width || 620,
         height: entry.contentRect.height || 620,
-      }),
-    );
+      };
+      setBounds(size);
+      onViewportSize?.(size);
+    });
     observer.observe(svg.current!);
     return () => observer.disconnect();
-  }, []);
+  }, [onViewportSize]);
   useEffect(() => {
     const canvas = svg.current!;
     const wheel = (event: WheelEvent) => {
@@ -336,7 +344,7 @@ export function EditorCanvas(props: Props) {
         start = pinch.current;
       const zoom = clamp(
         (start.zoom * Math.hypot(a[0] - b[0], a[1] - b[1])) / start.distance,
-        1,
+        bounded ? 0.25 : 1,
         16,
       );
       setView(

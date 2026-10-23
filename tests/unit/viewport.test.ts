@@ -3,8 +3,8 @@ import {
   canvasViewport,
   zoomCamera,
   anchoredCamera,
+  boundedCamera,
 } from "../../src/lib/viewport";
-import { dialFraction, dialPoint } from "../../src/lib/dial";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Glyph } from "../../src/components/Glyph";
@@ -97,18 +97,63 @@ describe("expanded drawing viewport", () => {
     ).toHaveLength(2);
   });
 });
-describe("arc dial", () => {
-  it("maps the full sweep to minimum, middle and maximum", () => {
-    expect(dialFraction(16, 62)).toBe(0);
-    expect(dialFraction(60, 18)).toBe(0.5);
-    expect(dialFraction(104, 62)).toBe(1);
-    for (const value of [0, 0.1, 0.5, 0.9, 1]) {
-      const p = dialPoint(value);
-      expect(dialFraction(p.x, p.y)).toBeCloseTo(value);
+describe("bounded phone camera", () => {
+  const portrait = { width: 366, height: 700 };
+  it("supports zoom through 1600% and locks movement at 100% or below", () => {
+    expect(boundedCamera({ x: -900, y: 700, zoom: 1 }, portrait)).toEqual(fit);
+    expect(boundedCamera({ x: 900, y: -300, zoom: 0.5 }, portrait)).toEqual({
+      x: -500,
+      y: -500,
+      zoom: 0.5,
+    });
+    expect(boundedCamera({ x: 0, y: 0, zoom: 8 }, portrait).zoom).toBe(8);
+    expect(boundedCamera({ x: 0, y: 0, zoom: 99 }, portrait).zoom).toBe(16);
+  });
+  it("keeps the fitting axis centered while zooming the other axis", () => {
+    const camera = boundedCamera({ x: 900, y: -300, zoom: 1.5 }, portrait);
+    expect(camera.x).toBeCloseTo(1000 - 1000 / 1.5);
+    expect(camera.y).toBeCloseTo(500 - 500 / 1.5);
+    const view = canvasViewport(camera, portrait);
+    expect(view.y + view.height / 2).toBeCloseTo(500);
+    expect(view.y).toBeLessThan(0);
+    expect(view.y + view.height).toBeGreaterThan(1000);
+  });
+  it("stops inward-moving edges at their original 100% positions, without cropping to that square", () => {
+    for (const bounds of [portrait, { width: 820, height: 246 }]) {
+      const original = canvasViewport(fit, bounds);
+      const leftTop = canvasViewport(
+        boundedCamera({ x: -10000, y: -10000, zoom: 4 }, bounds),
+        bounds,
+      );
+      const rightBottom = canvasViewport(
+        boundedCamera({ x: 10000, y: 10000, zoom: 4 }, bounds),
+        bounds,
+      );
+      expect(-leftTop.x / leftTop.unit).toBeCloseTo(
+        -original.x / original.unit,
+      );
+      expect(-leftTop.y / leftTop.unit).toBeCloseTo(
+        -original.y / original.unit,
+      );
+      expect((1000 - rightBottom.x) / rightBottom.unit).toBeCloseTo(
+        (1000 - original.x) / original.unit,
+      );
+      expect((1000 - rightBottom.y) / rightBottom.unit).toBeCloseTo(
+        (1000 - original.y) / original.unit,
+      );
+      expect(leftTop.width / leftTop.height).toBeCloseTo(
+        bounds.width / bounds.height,
+      );
     }
   });
-  it("clamps movement below the arc to the closest end", () => {
-    expect(dialFraction(15, 80)).toBe(0);
-    expect(dialFraction(105, 80)).toBe(1);
+  it("zooms back below 100% while preserving the center", () => {
+    const camera = boundedCamera(
+      zoomCamera(fit, 0.5, undefined, 0.25),
+      portrait,
+    );
+    const view = canvasViewport(camera, portrait);
+    expect(camera.zoom).toBe(0.5);
+    expect(view.x + view.width / 2).toBeCloseTo(500);
+    expect(view.y + view.height / 2).toBeCloseTo(500);
   });
 });

@@ -10,10 +10,13 @@ import { Modal } from "../Modal";
 import { Icon } from "../Icon";
 import { MobileTopBar } from "./MobileTopBar";
 import { MobileTools } from "./MobileTools";
-import { MobileDials } from "./MobileDials";
+import { MobileViewControls } from "./MobileViewControls";
 
 export function MobileEditor({ editor: e }: { editor: Editor }) {
-  const { camera, setCamera, zoomTo, fit } = useCanvasView(e.session);
+  const { camera, setCamera, zoomTo, fit, setBounds } = useCanvasView(
+    e.session,
+    true,
+  );
   const [sheet, setSheet] = useState<
     "character" | "library" | "font" | "export" | null
   >(null);
@@ -42,6 +45,8 @@ export function MobileEditor({ editor: e }: { editor: Editor }) {
           brushShape={e.brushShape}
           guides={e.guides}
           camera={camera}
+          bounded
+          onViewportSize={setBounds}
           onCameraChange={setCamera}
           busy={e.busy}
           onChange={e.changeModel}
@@ -49,7 +54,7 @@ export function MobileEditor({ editor: e }: { editor: Editor }) {
           onGesture={e.onGesture}
           notify={e.notify}
         />
-        <MobileDials
+        <MobileViewControls
           editor={e}
           zoom={camera.zoom}
           onZoom={zoomTo}
