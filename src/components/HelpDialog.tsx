@@ -46,7 +46,7 @@ export function HelpDialog({ close }: { close: () => void }) {
           Copy for document copies editable text or a transparent image. Text
           needs the library font installed in the receiving app; keep source
           formatting. Update the installed font after changing your library.
-          Images need no custom font. The single-character font uses U+E000.
+          Images need no custom font. All downloads are in Library.
         </p>
         <p id="fontCredit">
           The included font is derived from Noto Serif CJK under the SIL Open

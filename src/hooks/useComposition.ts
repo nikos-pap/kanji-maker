@@ -153,7 +153,11 @@ export function useComposition(
     remove,
     duplicate,
     reorder,
-    rename: (name: string) => commit({ ...live.current, name }),
+    clear: () => {
+      if (gesture.current || !live.current.parts.length) return;
+      commit(emptyComposition());
+      select(null);
+    },
     openDocument: (next: Composition) => {
       publish(next);
       setPast([]);
@@ -161,9 +165,14 @@ export function useComposition(
       select(next.parts.at(-1)?.id || null);
     },
     markSaved: (id: string) => {
+      const previousId = live.current.libraryId;
+      const attach = (document: Composition) =>
+        document.libraryId === previousId
+          ? { ...document, libraryId: id }
+          : document;
       publish({ ...live.current, libraryId: id });
-      setPast((p) => p.map((document) => ({ ...document, libraryId: id })));
-      setFuture((p) => p.map((document) => ({ ...document, libraryId: id })));
+      setPast((p) => p.map(attach));
+      setFuture((p) => p.map(attach));
     },
   };
 }

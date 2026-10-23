@@ -77,11 +77,11 @@ test("adds radicals and strokes, moves/resizes/crops parts and opens the result 
   await expect
     .poll(async () => (await composition(page)).parts[0].crop.x)
     .toBeCloseTo(250, 0);
-  await page.getByRole("button", { name: "Undo composition" }).click();
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
   await expect
     .poll(async () => (await composition(page)).parts[0].crop.x)
     .toBe(0);
-  await page.getByRole("button", { name: "Redo composition" }).click();
+  await page.getByRole("button", { name: "Redo", exact: true }).click();
   await expect
     .poll(async () => (await composition(page)).parts[0].crop.x)
     .toBeCloseTo(250, 0);
@@ -90,9 +90,9 @@ test("adds radicals and strokes, moves/resizes/crops parts and opens the result 
     .getByRole("button", { name: "Add horizontal stroke", exact: true })
     .click();
   await expect(page.locator("[data-component]")).toHaveCount(2);
-  await page
-    .getByLabel("Composition name", { exact: true })
-    .fill("Built character");
+  await expect(
+    page.getByLabel("Composition name", { exact: true }),
+  ).toHaveCount(0);
   await page
     .getByRole("button", { name: "Save composition to library", exact: true })
     .click();
@@ -119,10 +119,12 @@ test("adds radicals and strokes, moves/resizes/crops parts and opens the result 
     page.getByRole("link", { name: "Back to character editor" }),
   ).toHaveCount(0);
   await page.getByRole("button", { name: "Open composition library" }).click();
-  await expect(page.locator("#libraryDialog input[type=file]")).toHaveCount(0);
+  await expect(
+    page.locator("#libraryDialog input[accept='.json']"),
+  ).toHaveCount(0);
   await expect(page.locator("#libraryDialog .library-copy")).toHaveCount(0);
   await page
-    .getByRole("button", { name: "Export Built character", exact: true })
+    .getByRole("button", { name: "Export Radical composition", exact: true })
     .click();
   const exportDialog = page.getByRole("dialog", {
     name: "Export",
@@ -140,7 +142,7 @@ test("adds radicals and strokes, moves/resizes/crops parts and opens the result 
   expect(svg).not.toContain("data-handle");
   await expect(exportDialog).toHaveCount(0);
   await page
-    .getByRole("button", { name: "Export Built character", exact: true })
+    .getByRole("button", { name: "Export Radical composition", exact: true })
     .click();
   await exportDialog.getByRole("radio", { name: "PNG", exact: true }).check();
   const pngDownload = page.waitForEvent("download");
@@ -155,8 +157,8 @@ test("adds radicals and strokes, moves/resizes/crops parts and opens the result 
     .getByRole("button", { name: "Open composition in character editor" })
     .click();
   await expect(page).toHaveURL(/#editor$/);
-  await expect(page.locator("#glyphName")).toHaveValue("Built character");
-  await expect(page.locator("#exportFont")).toBeEnabled();
+  await expect(page.locator("#glyphName")).toHaveValue("Radical composition");
+  await expect(page.locator("#saveGlyph")).toBeEnabled();
   await page.getByRole("link", { name: "Radicals & strokes" }).click();
   await expect(page.locator("[data-component]")).toHaveCount(2);
 });
@@ -179,7 +181,26 @@ test("restores the editable composition independently of the normal editor", asy
   await expect
     .poll(async () => (await composition(page)).libraryId)
     .toBeTruthy();
+  await page.locator("#compositionCanvas").focus();
+  await page.keyboard.press("Escape");
+  const selector = page.getByRole("combobox", {
+    name: "Selected component",
+    exact: true,
+  });
+  await expect(selector).toHaveValue("");
+  await expect(selector).toBeEnabled();
+  await expect(page.getByLabel("Width %", { exact: true })).toHaveCount(0);
+  const selectedId = (await composition(page)).parts[0].id;
+  await selector.selectOption(selectedId);
+  await expect(selector).toHaveValue(selectedId);
+  await expect(page.getByLabel("Width %", { exact: true })).toBeVisible();
   const before = await composition(page);
+  await page.getByRole("button", { name: "Clear", exact: true }).click();
+  await expect(page.locator("[data-component]")).toHaveCount(0);
+  expect((await composition(page)).libraryId).toBeUndefined();
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(page.locator("[data-component]")).toHaveCount(2);
+  expect(await composition(page)).toEqual(before);
   await page.reload();
   await expect(page.locator("[data-component]")).toHaveCount(2);
   expect(await composition(page)).toEqual(before);
@@ -189,6 +210,20 @@ test("restores the editable composition independently of the normal editor", asy
   await page
     .getByRole("button", { name: "Open Radical composition", exact: true })
     .click();
+  await expect(page.locator("[data-component]")).toHaveCount(2);
+  await page.getByRole("button", { name: "Open composition library" }).click();
+  const backupDownload = page.waitForEvent("download");
+  await page.locator("#exportProject").click();
+  const backup = await readFile((await (await backupDownload).path())!);
+  await page.getByRole("button", { name: "Close library" }).click();
+  await page.locator("#compositionImportFile").setInputFiles({
+    name: "compositions.json",
+    mimeType: "application/json",
+    buffer: backup,
+  });
+  await page.getByRole("button", { name: "Open composition library" }).click();
+  await expect(page.locator("#library .library-item")).toHaveCount(2);
+  await page.locator(".library-load").first().click();
   await expect(page.locator("[data-component]")).toHaveCount(2);
 });
 
@@ -201,6 +236,20 @@ test.describe("phone composer", () => {
   test("keeps the canvas on screen and edits components through sheets", async ({
     page,
   }) => {
+    await expect(
+      page
+        .locator(".composer-toolbar")
+        .getByRole("button", { name: "Add radical or stroke", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page
+        .locator(".composer-toolbar")
+        .getByRole("button", { name: "Component settings", exact: true }),
+    ).toBeVisible();
+    await expect(page.locator(".composer-bottom > button")).toHaveCount(0);
+    await expect(
+      page.locator(".composer-header > button").first(),
+    ).toHaveAccessibleName("Open composition in character editor");
     await page
       .getByRole("button", { name: "Add radical or stroke", exact: true })
       .click();
@@ -216,10 +265,13 @@ test.describe("phone composer", () => {
     await expect(
       page.locator('[aria-label="Selected component mode"]'),
     ).toHaveCount(0);
-    await expect(page.locator('input[type="file"]')).toHaveCount(0);
-    expect(
-      await page.locator(".component-inspector > label").first().innerText(),
-    ).toContain("Composition name");
+    await expect(
+      page.locator('#compositionSheet input[type="file"]'),
+    ).toHaveCount(0);
+    await expect(page.locator("#compositionImportFile")).toHaveCount(1);
+    await expect(
+      page.getByLabel("Composition name", { exact: true }),
+    ).toHaveCount(0);
     const close = page.getByRole("button", { name: "Close component panel" });
     const before = (await close.boundingBox())!;
     await page.getByLabel("Left", { exact: true }).fill("25");
@@ -243,6 +295,16 @@ test.describe("phone composer", () => {
             document.documentElement.scrollWidth <= innerWidth,
         ),
       ).toBe(true);
+      for (const selector of [".composer-header", ".composer-toolbar"]) {
+        const bounds = (await page.locator(selector).boundingBox())!;
+        expect(bounds.x).toBeGreaterThanOrEqual(0);
+        expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
+        expect(
+          await page
+            .locator(selector)
+            .evaluate((element) => element.scrollWidth <= element.clientWidth),
+        ).toBe(true);
+      }
       const canvas = (await page.locator("#compositionCanvas").boundingBox())!;
       expect(canvas.x).toBeGreaterThanOrEqual(0);
       expect(canvas.y).toBeGreaterThanOrEqual(0);

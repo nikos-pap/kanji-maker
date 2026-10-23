@@ -15,6 +15,10 @@ export type IconName =
   | "square"
   | "undo"
   | "redo"
+  | "clear"
+  | "add"
+  | "settings"
+  | "load"
   | "save"
   | "import"
   | "export"
@@ -24,6 +28,11 @@ export type IconName =
   | "zoom"
   | "chevron";
 const paths: Record<Exclude<IconName, "round" | "square">, string> = {
+  add: "M12 5v14M5 12h14",
+  load: "M5 12h14m-5-5 5 5-5 5",
+  settings:
+    "M3 6h6m4 0h8M3 12h12m4 0h2M3 18h2m4 0h12M13 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM19 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM9 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z",
+  clear: "M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7",
   compose: "M3 3h7v18H3ZM14 3h7v7h-7Zm0 11h7v7h-7Z",
   resize:
     "M4 9V4h5m6 0h5v5M4 15v5h5m6 0h5v-5M8 8 4 4m12 4 4-4M8 16l-4 4m12-4 4 4",

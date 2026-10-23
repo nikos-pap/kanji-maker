@@ -55,10 +55,68 @@ dialog.panel-dialog.library-export-dialog {
   margin: auto;
   inset: 0;
 }
+dialog.panel-dialog.library-dialog {
+  height: min(720px, 90dvh);
+}
+.library-dialog > .panel-dialog-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.library-dialog .library-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 14px;
+}
 .library-dialog #library {
+  flex: 1;
+  min-height: 50px;
   max-height: none;
-  overflow: visible;
-  margin: 12px 0 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  margin: 0;
+}
+.library-dialog .library-item {
+  flex-shrink: 0;
+}
+.library-footer {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.library-footer .library-exports {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.library-footer .library-exports button {
+  min-width: 0;
+  padding: 9px 3px;
+  font-size: 12px;
+}
+.library-footer .font-picker {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+.library-footer #chooseFont {
+  flex-shrink: 0;
+  padding: 7px 9px;
+  font-size: 12px;
+}
+.library-footer #fontName {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .library-dialog .library-item {
   gap: 6px;

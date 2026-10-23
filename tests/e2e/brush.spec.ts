@@ -43,7 +43,7 @@ test("square brush is shared by Draw, Erase and Line and survives save/reload", 
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("./");
-  await expect(page.locator("#exportFont")).toBeEnabled();
+  await expect(page.locator("#saveGlyph")).toBeEnabled();
   // Keep the source outline outside the pixel samples used to check the brush.
   const backup = {
     format: "kanji-maker-library",
@@ -110,7 +110,7 @@ test("square brush is shared by Draw, Erase and Line and survives save/reload", 
   await expect(page.locator("#showGrid")).not.toBeChecked();
   await page.locator("#saveGlyph").click();
   await page.reload();
-  await expect(page.locator("#exportFont")).toBeEnabled();
+  await expect(page.locator("#saveGlyph")).toBeEnabled();
   const operations = await page.evaluate(
     () =>
       JSON.parse(localStorage.getItem("kanji-maker.draft.v1")!).model

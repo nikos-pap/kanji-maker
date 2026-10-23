@@ -1,5 +1,6 @@
 import { Glyph } from "./Glyph";
 import { Icon } from "./Icon";
+import { FontPicker } from "./FontPicker";
 import type { Editor } from "../hooks/useEditor";
 import type { LibraryEntry } from "../types";
 
@@ -9,22 +10,15 @@ export function LibraryPanel({
   current,
   onOpen,
   onExport,
-  onNew,
 }: {
   editor: Editor;
   busy: boolean;
   current?: string;
   onOpen: (entry: LibraryEntry) => void;
   onExport: (entry: LibraryEntry) => void;
-  onNew?: () => void;
 }) {
   return (
     <section className="library-panel" aria-label="Saved characters">
-      {onNew && (
-        <button disabled={busy} onClick={onNew}>
-          New composition
-        </button>
-      )}
       <div id="library">
         {!e.library.length && (
           <div className="library-empty">No saved characters</div>
@@ -68,31 +62,36 @@ export function LibraryPanel({
           </div>
         ))}
       </div>
-      <div className="library-exports">
-        <button
-          id="exportLibraryWord"
-          className="primary full"
-          disabled={!e.library.length || busy}
-          onClick={() => e.exportLibrary("word")}
-        >
-          Word (.docx)
-        </button>
-        <button
-          id="exportLibraryFont"
-          className="full"
-          disabled={!e.library.length || busy}
-          onClick={() => e.exportLibrary("font")}
-        >
-          Font (.ttf)
-        </button>
-        <button
-          id="exportProject"
-          className="quiet full"
-          disabled={!e.library.length || busy}
-          onClick={() => e.exportLibrary("json")}
-        >
-          Backup (.json)
-        </button>
+      <div className="library-footer">
+        <FontPicker
+          editor={{ busy, fontLabel: e.fontLabel, chooseFont: e.chooseFont }}
+        />
+        <div className="library-exports">
+          <button
+            id="exportLibraryWord"
+            className="primary full"
+            disabled={!e.library.length || busy}
+            onClick={() => e.exportLibrary("word")}
+          >
+            Word (.docx)
+          </button>
+          <button
+            id="exportLibraryFont"
+            className="full"
+            disabled={!e.library.length || busy}
+            onClick={() => e.exportLibrary("font")}
+          >
+            Font (.ttf)
+          </button>
+          <button
+            id="exportProject"
+            className="quiet full"
+            disabled={!e.library.length || busy}
+            onClick={() => e.exportLibrary("json")}
+          >
+            Backup (.json)
+          </button>
+        </div>
       </div>
     </section>
   );

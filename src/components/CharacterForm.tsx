@@ -1,20 +1,27 @@
 import type { Editor } from "../hooks/useEditor";
+import { Icon } from "./Icon";
 
 type CharacterFormState = Pick<
   Editor,
   "busy" | "character" | "setCharacter" | "loadCharacter"
 >;
-export function CharacterForm({ editor: e }: { editor: CharacterFormState }) {
+export function CharacterForm({
+  editor: e,
+  compact = false,
+}: {
+  editor: CharacterFormState;
+  compact?: boolean;
+}) {
   return (
     <form
       id="characterForm"
-      className="character-bar"
+      className={"character-bar" + (compact ? " compact-character" : "")}
       onSubmit={(event) => {
         event.preventDefault();
         void e.loadCharacter();
       }}
     >
-      <label htmlFor="character">Character</label>
+      {!compact && <label htmlFor="character">Character</label>}
       <input
         id="character"
         value={e.character}
@@ -22,14 +29,18 @@ export function CharacterForm({ editor: e }: { editor: CharacterFormState }) {
         autoComplete="off"
         spellCheck={false}
         aria-label="Base character"
+        enterKeyHint="go"
+        disabled={e.busy}
       />
       <button
         id="loadCharacter"
         type="submit"
         className="primary"
+        aria-label="Load character"
+        title="Load character"
         disabled={e.busy}
       >
-        Load
+        {compact ? <Icon name="load" width="18" height="18" /> : "Load"}
       </button>
     </form>
   );

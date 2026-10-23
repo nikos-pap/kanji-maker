@@ -66,30 +66,26 @@ export function ComponentInspector({ composer: c }: Props) {
   const selection = c.document.parts.findIndex((p) => p.id === c.selected);
   return (
     <section className="component-inspector" aria-label="Component settings">
-      <label className="composition-name">
-        Composition name
-        <input
-          maxLength={80}
-          value={c.document.name}
-          onChange={(event) => c.rename(event.currentTarget.value)}
-        />
+      <label>
+        Component
+        <select
+          aria-label="Selected component"
+          value={part?.id ?? ""}
+          disabled={!c.document.parts.length}
+          onChange={(event) => c.select(event.currentTarget.value || null)}
+        >
+          <option value="" disabled>
+            Select a component
+          </option>
+          {c.document.parts.map((p, i) => (
+            <option key={p.id} value={p.id}>
+              {i + 1}. {p.label}
+            </option>
+          ))}
+        </select>
       </label>
       {part && bounds ? (
         <>
-          <label>
-            Component
-            <select
-              aria-label="Selected component"
-              value={part.id}
-              onChange={(event) => c.select(event.currentTarget.value)}
-            >
-              {c.document.parts.map((p, i) => (
-                <option key={p.id} value={p.id}>
-                  {i + 1}. {p.label}
-                </option>
-              ))}
-            </select>
-          </label>
           <div className="component-fields">
             <NumberField
               label="X %"

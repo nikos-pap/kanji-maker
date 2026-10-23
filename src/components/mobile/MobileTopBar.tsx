@@ -1,54 +1,26 @@
-import { useRef } from "react";
 import type { Editor } from "../../hooks/useEditor";
 import { Icon } from "../Icon";
+import { HistoryControls } from "../HistoryControls";
+import { CharacterForm } from "../CharacterForm";
+import { ImportButton } from "../ImportButton";
 
 type Props = {
   editor: Editor;
-  onCharacters: () => void;
   onLibrary: () => void;
-  onFont: () => void;
-  onExport: () => void;
 };
-export function MobileTopBar({
-  editor: e,
-  onCharacters,
-  onLibrary,
-  onFont,
-  onExport,
-}: Props) {
-  const input = useRef<HTMLInputElement>(null);
+export function MobileTopBar({ editor: e, onLibrary }: Props) {
   return (
     <div className="phone-topbar" role="toolbar" aria-label="Editor actions">
-      <button
-        className="phone-character"
-        aria-label="Choose character"
-        title="Character"
-        onClick={onCharacters}
-      >
-        <span>{e.model.character || "字"}</span>
-        <Icon name="chevron" width="12" height="12" />
-      </button>
-      <button aria-label="Choose font" title="Font" onClick={onFont}>
-        <Icon name="font" />
-      </button>
-      <div className="phone-history" role="group" aria-label="Edit history">
-        <button
-          aria-label="Undo"
-          title="Undo"
-          disabled={!e.past.length || e.busy}
-          onClick={e.undo}
-        >
-          <Icon name="undo" />
-        </button>
-        <button
-          aria-label="Redo"
-          title="Redo"
-          disabled={!e.future.length || e.busy}
-          onClick={e.redo}
-        >
-          <Icon name="redo" />
-        </button>
-      </div>
+      <CharacterForm editor={e} compact />
+      <HistoryControls
+        canUndo={!!e.past.length}
+        canRedo={!!e.future.length}
+        canClear={!e.isBlank}
+        disabled={e.busy}
+        onUndo={e.undo}
+        onRedo={e.redo}
+        onClear={e.clear}
+      />
       <div className="phone-file-actions">
         <button aria-label="Open library" title="Library" onClick={onLibrary}>
           <Icon name="library" />
@@ -61,30 +33,12 @@ export function MobileTopBar({
         >
           <Icon name="save" />
         </button>
-        <button
-          aria-label="Import app file"
-          title="Import"
+        <ImportButton
+          id="phoneImportFile"
           disabled={e.busy}
-          onClick={() => input.current?.click()}
-        >
-          <Icon name="import" />
-        </button>
-        <button aria-label="Export and copy" title="Export" onClick={onExport}>
-          <Icon name="export" />
-        </button>
+          onImport={e.importFile}
+        />
       </div>
-      <input
-        ref={input}
-        id="phoneImportFile"
-        type="file"
-        accept=".json"
-        hidden
-        onChange={(event) => {
-          const file = event.currentTarget.files?.[0];
-          event.currentTarget.value = "";
-          if (file) void e.importFile(file);
-        }}
-      />
     </div>
   );
 }

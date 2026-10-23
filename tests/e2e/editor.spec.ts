@@ -9,7 +9,7 @@ test.beforeEach(async ({ page }) => {
   errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("./");
-  await expect(page.locator("#exportFont")).toBeEnabled();
+  await expect(page.locator("#saveGlyph")).toBeEnabled();
   await expect
     .poll(
       async () =>
@@ -92,13 +92,17 @@ test("drawing, undo, redo, visible area cuts, points and zoom", async ({
   await page.locator("#zoomFit").click();
   await expect(page.locator("#zoomLevel")).toHaveValue("1");
   // Composed cuts and strokes exercise silhouette tracing, rather than native outlines.
+  await page.locator("#saveGlyph").click();
+  await page.getByRole("button", { name: "Library", exact: true }).click();
   const fontDownload = page.waitForEvent("download");
-  await page.locator("#exportFont").click();
+  await page.locator("#exportLibraryFont").click();
   const tracedFont = await readFile((await (await fontDownload).path())!);
   expect(
     fontkit.create(new Uint8Array(tracedFont)).hasGlyphForCodePoint(0xe000),
   ).toBe(true);
+  await page.getByRole("button", { name: "Close library" }).click();
   await expect(page.locator("#saveGlyph")).toBeEnabled();
+  await expect(page.locator(".character-panel [id^=export]")).toHaveCount(0);
   await page.screenshot({ path: "tmp/react-editor.png", fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   expect(
@@ -121,7 +125,7 @@ test("library survives reload and exports JSON, SVG, PNG, font and Word", async 
   );
   expect(stored[0].codePoint).toBe(0xe000);
   await page.reload();
-  await expect(page.locator("#exportFont")).toBeEnabled();
+  await expect(page.locator("#saveGlyph")).toBeEnabled();
   await page.locator("#glyphName").fill("Unsaved different name");
   await page.getByRole("button", { name: "Library", exact: true }).click();
   await expect(page.locator("#exportLibraryFont")).toBeEnabled();
@@ -142,7 +146,9 @@ test("library survives reload and exports JSON, SVG, PNG, font and Word", async 
     else expect([...bytes.subarray(0, 4)]).toEqual([137, 80, 78, 71]);
     await expect(dialog).toHaveCount(0);
   }
-  await expect(page.locator("#libraryDialog input[type=file]")).toHaveCount(0);
+  await expect(
+    page.locator("#libraryDialog input[accept='.json']"),
+  ).toHaveCount(0);
   for (const [id, extension] of [
     ["exportProject", ".json"],
     ["exportLibraryFont", ".ttf"],
@@ -166,9 +172,14 @@ test("library survives reload and exports JSON, SVG, PNG, font and Word", async 
     await expect(page.locator("#saveGlyph")).toBeEnabled();
   }
   await page.getByRole("button", { name: "Close library" }).click();
-  const singleFont = page.waitForEvent("download");
-  await page.locator("#exportFont").click();
-  expect((await singleFont).suggestedFilename()).toContain(".ttf");
+  const beforeClear = await draft(page);
+  await page.getByRole("button", { name: "Clear", exact: true }).click();
+  await expect(page.locator("#saveGlyph")).toBeDisabled();
+  await expect.poll(async () => (await draft(page)).libraryId).toBeNull();
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  expect(await draft(page)).toEqual(beforeClear);
+  await page.getByRole("button", { name: "Redo", exact: true }).click();
+  await expect(page.locator("#saveGlyph")).toBeDisabled();
 });
 
 test("imports compatible backups with stable codes and loads a selected font", async ({
@@ -215,13 +226,11 @@ test("imports compatible backups with stable codes and loads a selected font", a
     JSON.parse(localStorage.getItem("kanji-maker.library.v1")!),
   );
   expect(stored[0].codePoint).toBe(0xe081);
-  await page.getByRole("button", { name: "Close library" }).click();
   await page
     .locator("#fontFile")
     .setInputFiles(path.resolve("assets/fonts/N5PDFSerif-Regular.ttf"));
   await expect(page.locator("#fontName")).toHaveText("N5PDFSerif-Regular.ttf");
-  await expect(page.locator("#exportFont")).toBeEnabled();
-  await page.getByRole("button", { name: "Library", exact: true }).click();
+  await expect(page.locator("#saveGlyph")).toBeEnabled();
   await page.locator("#library .library-delete").first().click();
   await page
     .locator("#confirmDialog")

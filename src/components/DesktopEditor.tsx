@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import type { Editor } from "../hooks/useEditor";
 import { AppHeader } from "./AppHeader";
 import { EditorWorkspace } from "./EditorWorkspace";
-import { ExportPanel } from "./ExportPanel";
+import { CharacterPanel } from "./CharacterPanel";
 import { GlyphPreview } from "./GlyphPreview";
 import { LibraryDialog } from "./LibraryDialog";
 
@@ -12,6 +12,7 @@ export function DesktopEditor({ editor }: { editor: Editor }) {
   return (
     <>
       <AppHeader
+        editor={editor}
         onHelp={() => editor.setHelp(true)}
         onLibrary={() => setLibrary(true)}
         onImport={() => importInput.current?.click()}
@@ -20,7 +21,7 @@ export function DesktopEditor({ editor }: { editor: Editor }) {
         <EditorWorkspace editor={editor} />
         <aside>
           <GlyphPreview model={editor.model} />
-          <ExportPanel editor={editor} />
+          <CharacterPanel editor={editor} />
         </aside>
       </main>
       <input

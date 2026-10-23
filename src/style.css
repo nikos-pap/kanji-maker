@@ -40,9 +40,6 @@
   flex-direction: column;
   min-width: 0;
 }
-.export-buttons button {
-  min-width: 0;
-}
 .library-load {
   overflow: hidden;
 }
@@ -292,11 +289,16 @@ main {
 }
 .history-controls {
   display: flex;
-  gap: 5px;
-  margin-left: auto;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
 }
-.history-controls button {
-  padding: 5px 10px;
+.history-controls > button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 38px;
+  padding: 0;
 }
 .canvas-surround {
   background: #e8ece5;
@@ -381,25 +383,14 @@ aside section {
   color: var(--muted);
   margin: 9px 0 0;
 }
-.export-panel label {
+.character-panel label {
   display: block;
   font-size: 12px;
   margin-bottom: 5px;
 }
-.export-panel input {
+.character-panel input {
   width: 100%;
   margin-bottom: 10px;
-}
-.export-buttons {
-  display: flex;
-  gap: 6px;
-  margin-top: 10px;
-}
-.export-buttons button {
-  flex: 1;
-  padding: 8px 4px;
-  font-size: 12px;
-  white-space: nowrap;
 }
 code {
   font-size: 11px;
@@ -607,8 +598,19 @@ dialog p {
   stroke: #fff;
   stroke-width: 1.5;
 }
-#brushCursor {
+#brushCursor,
+.brush-cursor-halo {
   vector-effect: non-scaling-stroke;
+}
+.brush-cursor-halo {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 4;
+}
+#pointerOverlay[data-cursor-tool="erase"] #brushCursor {
+  fill: #bd50221a;
+  stroke: #a94220;
+  stroke-dasharray: 4 3;
 }
 .canvas-frame {
   overflow: hidden;

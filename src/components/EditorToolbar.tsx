@@ -14,12 +14,6 @@ type ToolbarState = Pick<
   | "setBrushShape"
   | "guides"
   | "setGuides"
-  | "past"
-  | "future"
-  | "undo"
-  | "redo"
-  | "edited"
-  | "reset"
 >;
 type Props = {
   editor: ToolbarState;
@@ -46,38 +40,6 @@ export function EditorToolbar({ editor: e, zoom, onZoom, onFit }: Props) {
               {t.label}
             </button>
           ))}
-        </div>
-        <div
-          className="history-controls"
-          role="group"
-          aria-label="Edit history"
-        >
-          <button
-            id="undo"
-            title="Undo (Ctrl+Z)"
-            aria-label="Undo"
-            disabled={!e.past.length || e.busy}
-            onClick={e.undo}
-          >
-            ↶
-          </button>
-          <button
-            id="redo"
-            title="Redo (Ctrl+Shift+Z)"
-            aria-label="Redo"
-            disabled={!e.future.length || e.busy}
-            onClick={e.redo}
-          >
-            ↷
-          </button>
-          <button
-            id="reset"
-            className="quiet"
-            disabled={!e.edited || e.busy}
-            onClick={e.reset}
-          >
-            Reset
-          </button>
         </div>
       </div>
       <div className="tool-options" role="group" aria-label="Tool settings">
@@ -125,6 +87,14 @@ export function EditorToolbar({ editor: e, zoom, onZoom, onFit }: Props) {
             }
           />
         </label>
+        <button
+          aria-label="Reset brush size to 45"
+          title="Reset brush size to 45"
+          disabled={brushDisabled}
+          onClick={() => e.setBrush(45)}
+        >
+          Reset size
+        </button>
         <label className="guides-control">
           <input
             id="showGrid"

@@ -82,11 +82,11 @@ GitHub Pages without server routing. The original editor is at `#editor`.
   restores the full source. Resizing preserves the chosen crop.
 - Use the bottom component strip to select overlapping pieces. Component settings
   include Duplicate, Remove, Bring forward and Send backward.
-- Undo/redo is independent of the drawing editor. Arrow keys nudge a selected
+- Undo/redo is independent of the drawing editor; Clear starts an empty composition and can be undone. Arrow keys nudge a selected
   component; Shift moves by 10 units. Delete removes it. Escape cancels a drag.
 
 The composition draft is saved separately in browser storage. The component panel
-starts with the composition name. Save is in the top bar on desktop and phone. Move/resize and
+shows a component selector even when nothing is selected. Save is in the top bar on desktop and phone. Move/resize and
 Crop live only in the central toolbar. Numeric fields ignore wheel changes.
 
 The composer shares the drawing editor's library. Saving retains the original
@@ -94,10 +94,11 @@ components, sizes, positions and crops, plus the assembled glyph used by Word an
 font exports. Opening a composition restores its editable pieces; opening an
 ordinary saved character creates one full-size component. Saving an opened item
 updates its existing character code. Library backups also retain editable pieces.
-Both editors use the same Library popup. Each saved character has an export button
+Both editors use the same fixed-height Library popup. Only the character list
+scrolls; font selection and the Word, font and backup buttons remain visible. Each saved character has an export button
 beside it; this opens a smaller dialog above the library with SVG and PNG choices
 and one Export button. SVG preserves source curves and crops; PNG is transparent
-at 2048 pixels. Import stays in the drawing editor's top bar, outside the library.
+at 2048 pixels. Both editors have an Import action in their top bar for library backups.
 
 **Preview** in the central toolbar opens a popup with the composition beside fixed
 kanji samples at several text sizes. A temporary font contains both the composed
@@ -114,22 +115,27 @@ see [Unicode's radical mappings](https://www.unicode.org/Public/17.0.0/ucd/CJKRa
 The generated data notice is in `assets/licenses/unicode-LICENSE.txt` and is copied
 to the built site's `licenses/` directory.
 
-On phones the canvas fills the main view. Add and Component settings open sheets;
-only sheet contents and the horizontal component strip scroll. Sheet headings
+On phones the canvas fills the main view. Add and Component settings sit in the
+second top bar and open sheets; settings uses a sliders icon. Editor sits at the
+left of the first top bar. Only sheet contents and the horizontal component strip scroll. Sheet headings
 and close buttons stay fixed above their scrolling contents.
 
 ## Phone layout
 
 Phones use a viewport-sized canvas view without a scrolling page. The top bar
-has separate Character, Font and Library actions, plus undo/redo, Save, Import
-and Export. Library sits immediately before Save. Save uses the current name;
-open Export to change the name or copy the character. Each action has its own panel.
+has an inline character field and Load button, plus Undo, Redo, Clear, Library,
+Save and Import. Character entry needs no popup; Enter also loads the character.
+Both editors group Undo, Redo and Clear in the top bar. Clear starts a fresh draft
+and can be undone; saved characters stay in Library. Library sits immediately before
+Save. Font selection and all exports live in Library.
 Only a panel's contents scroll when needed.
 
 Tap the floating tool button, then choose Draw, Erase, Cut area, Line or Points.
 The same picker includes a Round/Square tip toggle and closes after a choice.
 The bottom row has Guides, a horizontal Brush size slider and an icon-only Fit/Zoom
-button. The slider shows the Round/Square tip and current size. Tap Fit/Zoom to
+button. The bottom widgets use equal spacing. The slider shows the Round/Square tip
+and current size; tap its tip icon to reset to 45. Eraser bounds remain visible
+during a touch stroke, with a contrasting outline over black artwork. Tap Fit/Zoom to
 reset the view, or drag to adjust zoom. Both controls also support arrow keys.
 Compact landscape uses a two-column picker.
 
@@ -244,7 +250,6 @@ adds independent copies with fresh codes. Keep app-file backups separately.
 - **App file (.json):** editable outlines, cuts, strokes, names, font identity and
   character codes. Use this for backup and transfer.
 - **Saved character:** SVG or PNG from its library row. Both preserve transparent cuts.
-- **Current character:** a separate single-character font or an app file.
 - **Copy for document:** formatted text using the library font, or a transparent
   PNG. The image needs no font but is a picture. A text copy cannot install or
   embed its font through the clipboard. Keep source formatting when pasting text

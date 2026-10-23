@@ -30,13 +30,18 @@ import {
   download,
   libraryFont,
   loadIncludedFont,
-  outlineForModel,
   parseFont,
   png,
   svgText,
 } from "../lib/font";
-import { clipboardHtml, makeDocx, makeFont } from "../lib/exports";
+import { clipboardHtml, makeDocx } from "../lib/exports";
 
+type EditorSnapshot = {
+  model: GlyphModel;
+  libraryId: string | null;
+  saved: string;
+};
+const BLANK_PATH = "M0 0Z";
 const emptyModel = (): GlyphModel => ({
   version: 1,
   character: "長",
@@ -82,8 +87,8 @@ export function useEditor(active = true) {
     [meta, setMeta] = useState(initial.meta);
   const [libraryId, setLibraryId] = useState(initial.libraryId),
     [saved, setSaved] = useState(initial.saved);
-  const [past, setPast] = useState<GlyphModel[]>([]),
-    [future, setFuture] = useState<GlyphModel[]>([]);
+  const [past, setPast] = useState<EditorSnapshot[]>([]),
+    [future, setFuture] = useState<EditorSnapshot[]>([]);
   const [tool, setTool] = useState<Tool>("draw"),
     [brush, setBrush] = useState(45),
     [brushShape, setBrushShape] = useState<BrushShape>("round"),
@@ -124,10 +129,16 @@ export function useEditor(active = true) {
   const onGesture = useCallback((active: boolean) => {
     gesture.current = active;
   }, []);
-  const remember = useCallback((previous: GlyphModel) => {
-    setPast((p) => [...p.slice(-69), clone(previous)]);
-    setFuture([]);
-  }, []);
+  const remember = useCallback(
+    (previous: GlyphModel) => {
+      setPast((p) => [
+        ...p.slice(-69),
+        { model: clone(previous), libraryId, saved },
+      ]);
+      setFuture([]);
+    },
+    [libraryId, saved],
+  );
   const changeModel = useCallback((next: GlyphModel) => setModel(next), []);
   const currentEntry = model.basePath
     ? library.find(
@@ -135,11 +146,14 @@ export function useEditor(active = true) {
           g.id === libraryId && fingerprint(g.model) === fingerprint(model),
       )
     : undefined;
+  const isBlank =
+    !model.basePath ||
+    (model.basePath === BLANK_PATH && !model.operations.length);
   const edited =
     !!model.operations.length ||
     (!!model.originalPath && model.basePath !== model.originalPath);
   const family = familyName(meta),
-    disabled = busy || !model.basePath;
+    disabled = busy || isBlank;
   function persistLibrary(
     next: LibraryEntry[],
     nextMeta: LibraryMeta,
@@ -199,7 +213,7 @@ export function useEditor(active = true) {
       .catch((error) => {
         if (!controller.signal.aborted)
           notify(
-            `Could not load the included font: ${errorText(error)}. Use Choose font to load a TTF or OTF.`,
+            `Could not load the included font: ${errorText(error)}. Open Library to choose a TTF or OTF.`,
             true,
             true,
           );
@@ -313,28 +327,39 @@ export function useEditor(active = true) {
       notify(`Could not use this font: ${errorText(error)}`, true);
     }
   }
+  function restoreSnapshot(next: EditorSnapshot) {
+    setModel(clone(next.model));
+    setCharacter(next.model.character);
+    setLibraryId(next.libraryId);
+    setSaved(next.saved);
+    setSession((s) => s + 1);
+  }
   function undo() {
     if (!past.length || gesture.current || busy) return;
-    setFuture((f) => [...f, clone(model)]);
-    setModel(past[past.length - 1]);
+    setFuture((f) => [...f, { model: clone(model), libraryId, saved }]);
+    restoreSnapshot(past[past.length - 1]);
     setPast((p) => p.slice(0, -1));
-    setSession((s) => s + 1);
   }
   function redo() {
     if (!future.length || gesture.current || busy) return;
-    setPast((p) => [...p, clone(model)]);
-    setModel(future[future.length - 1]);
+    setPast((p) => [...p, { model: clone(model), libraryId, saved }]);
+    restoreSnapshot(future[future.length - 1]);
     setFuture((f) => f.slice(0, -1));
-    setSession((s) => s + 1);
   }
-  function reset() {
-    if (!edited || gesture.current || busy) return;
+  function clear() {
+    if (isBlank || gesture.current || busy) return;
     remember(model);
     setModel({
-      ...model,
-      basePath: model.originalPath || model.basePath,
+      version: 1,
+      character: "",
+      name: "Custom character",
+      basePath: BLANK_PATH,
+      originalPath: BLANK_PATH,
       operations: [],
     });
+    setCharacter("");
+    setLibraryId(null);
+    setSaved("");
     setSession((s) => s + 1);
   }
   function selectTool(next: Tool) {
@@ -474,51 +499,6 @@ export function useEditor(active = true) {
       setBusy(false);
     }
   }
-  const filename = () =>
-    (model.name.trim() || "custom-kanji")
-      .replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-")
-      .slice(0, 80);
-  function exportCurrent(kind: "svg" | "png" | "font" | "json") {
-    if (disabled) return;
-    void runExport(async () => {
-      if (kind === "svg")
-        download(
-          new Blob([svgText(model)], { type: "image/svg+xml" }),
-          `${filename()}.svg`,
-        );
-      else if (kind === "png") download(await png(model), `${filename()}.png`);
-      else if (kind === "json")
-        download(
-          appFile(
-            [
-              {
-                id: crypto.randomUUID(),
-                codePoint: 0xe000,
-                model: clone(model),
-              },
-            ],
-            { ...newMeta(), nextCodePoint: 0xe001 },
-          ),
-          `${filename()}.kanji.json`,
-        );
-      else {
-        notify("Building the font…", false, true);
-        const family = `KanjiMaker-${Date.now().toString(36)}`;
-        const text = model.customFont
-          ? `Created from ${model.fontLabel || "an uploaded font"}. Its source licence applies.`
-          : licence.current;
-        const bytes = makeFont(
-          [{ codePoint: 0xe000, contours: await outlineForModel(model) }],
-          family,
-          text,
-        );
-        if (!parseFont(bytes).hasGlyphForCodePoint(0xe000))
-          throw Error("Font validation failed.");
-        download(new Blob([bytes], { type: "font/ttf" }), `${family}.ttf`);
-      }
-      notify("Download ready.");
-    });
-  }
   function exportSavedImage(entry: LibraryEntry, kind: "svg" | "png") {
     return runExport(async () => {
       const filename = (entry.model.name.trim() || "custom-kanji")
@@ -605,20 +585,6 @@ export function useEditor(active = true) {
       notify(`Could not copy: ${errorText(error)}`, true);
     }
   }
-  async function copyCharacter() {
-    try {
-      await navigator.clipboard.writeText("\uE000");
-      notify(
-        "Private character copied. Use it with your exported single-character font.",
-      );
-    } catch {
-      notify(
-        "Copy this character and use your exported single-character font: \uE000",
-        true,
-        true,
-      );
-    }
-  }
   return {
     fontReady,
     getCharacterOutline,
@@ -644,19 +610,17 @@ export function useEditor(active = true) {
     chooseFont,
     undo,
     redo,
-    reset,
-    edited,
+    clear,
+    isBlank,
     saveGlyph,
     openGlyph,
     removeGlyph,
     importFile,
-    exportCurrent,
     exportSavedImage,
     exportLibrary,
     copyMode,
     setCopyMode,
     copyForDocument,
-    copyCharacter,
     currentEntry,
     brushShape,
     setBrushShape,

@@ -1,6 +1,6 @@
 import type { Editor } from "../hooks/useEditor";
 
-type ExportPanelState = Pick<
+type CharacterPanelState = Pick<
   Editor,
   | "disabled"
   | "copyMode"
@@ -9,15 +9,13 @@ type ExportPanelState = Pick<
   | "busy"
   | "changeModel"
   | "saveGlyph"
-  | "exportCurrent"
-  | "copyCharacter"
   | "setCopyMode"
   | "copyForDocument"
 >;
-export function ExportPanel({ editor: e }: { editor: ExportPanelState }) {
+export function CharacterPanel({ editor: e }: { editor: CharacterPanelState }) {
   const copyDisabled = e.disabled || (e.copyMode === "text" && !e.currentEntry);
   return (
-    <section className="export-panel">
+    <section className="character-panel">
       <h2>Current character</h2>
       <label htmlFor="glyphName">Name</label>
       <input
@@ -37,30 +35,6 @@ export function ExportPanel({ editor: e }: { editor: ExportPanelState }) {
         onClick={e.saveGlyph}
       >
         Save to library
-      </button>
-      <div className="export-buttons">
-        <button
-          id="exportFont"
-          title="Single-character font at U+E000"
-          disabled={e.disabled}
-          onClick={() => e.exportCurrent("font")}
-        >
-          Font
-        </button>
-        <button
-          id="exportCharacterProject"
-          disabled={e.disabled}
-          onClick={() => e.exportCurrent("json")}
-        >
-          App file
-        </button>
-      </div>
-      <button
-        id="copyCharacter"
-        className="text-button"
-        onClick={() => void e.copyCharacter()}
-      >
-        Copy font character
       </button>
       <div className="copy-document">
         <label htmlFor="copyDocumentMode">Copy as</label>

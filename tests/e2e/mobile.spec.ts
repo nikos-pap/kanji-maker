@@ -72,12 +72,20 @@ test("phone canvas and controls fit the viewport in portrait and landscape", asy
       .getByRole("button", { name: "Guides", exact: true })
       .boundingBox())!;
     for (const button of await page
-      .locator(".phone-view-actions button, #phoneTools")
+      .locator(".phone-view-actions > button, #phoneTools")
       .all()) {
       const box = (await button.boundingBox())!;
       expect(box.width).toBeCloseTo(guide.width);
       expect(box.height).toBeCloseTo(guide.height);
     }
+    const zoom = (await page
+      .getByRole("button", { name: "Fit canvas / Zoom", exact: true })
+      .boundingBox())!;
+    const tools = (await page.locator("#phoneTools").boundingBox())!;
+    const slider = (await page.locator(".phone-brush-size").boundingBox())!;
+    expect(slider.x - guide.x - guide.width).toBeCloseTo(8);
+    expect(zoom.x - slider.x - slider.width).toBeCloseTo(8);
+    expect(tools.x - zoom.x - zoom.width).toBeCloseTo(8);
     await page.locator("#phoneTools").click();
     await expect(page.locator("#phoneToolPalette [data-tool]")).toHaveText([
       "Draw",
@@ -141,6 +149,13 @@ test("two-tap tools, brush slider and zoom gestures edit without scrolling", asy
   await page.keyboard.press("End");
   await expect(brush).toHaveValue("160");
   await expect(page.locator(".phone-brush-size output")).toHaveText("160");
+  await page
+    .getByRole("button", { name: "Reset brush size to 45", exact: true })
+    .click();
+  await expect(brush).toHaveValue("45");
+  await brush.focus();
+  await page.keyboard.press("End");
+  await expect(brush).toHaveValue("160");
   await expect(fitButton).toHaveText("");
   await fitButton.focus();
   await page.keyboard.press("End");
@@ -220,27 +235,46 @@ test("two-tap tools, brush slider and zoom gestures edit without scrolling", asy
   await page.getByRole("button", { name: "Guides", exact: true }).click();
   await expect(page.locator("#grid")).toHaveCount(0);
   expect(await page.evaluate(() => scrollY)).toBe(0);
+  await page.locator("#phoneTools").click();
+  await page.getByRole("button", { name: "Erase", exact: true }).click();
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [{ x, y, id: 1 }],
+  });
+  await expect(
+    page.locator('#pointerOverlay[data-cursor-tool="erase"] #brushCursor'),
+  ).toBeVisible();
+  await expect(page.locator("#brushCursor")).toHaveAttribute("width", "160");
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchMove",
+    touchPoints: [{ x: x + 20, y, id: 1 }],
+  });
+  await expect(page.locator("#brushCursor")).toBeVisible();
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchCancel",
+    touchPoints: [],
+  });
+  await expect(page.locator("#brushCursor")).toHaveCount(0);
 });
 
-test("top bar opens character/library and export panels and saves/imports files", async ({
+test("top bar loads characters inline and opens the library to save/import files", async ({
   page,
 }) => {
-  await page.getByRole("button", { name: "Choose character" }).click();
-  await expect(page.getByRole("dialog", { name: "Character" })).toBeVisible();
-  await expect(page.locator("#phonePanel .library-panel")).toHaveCount(0);
-  await expect(page.locator("#phonePanel #fontFile")).toHaveCount(0);
-  await page.locator("#character").fill("日");
-  await page.locator("#loadCharacter").click();
+  await expect(page.locator(".phone-topbar #character")).toBeVisible();
   await expect(page.locator("#phonePanel")).toHaveCount(0);
-  await expect(page.locator(".phone-character span")).toHaveText("日");
-  await page.getByRole("button", { name: "Choose font", exact: true }).click();
+  await page.locator("#character").fill("日");
+  await page
+    .getByRole("button", { name: "Load character", exact: true })
+    .click();
+  await expect.poll(async () => (await draft(page)).model.character).toBe("日");
+  await expect(page.locator(".phone-topbar #character")).toHaveValue("日");
   await expect(
-    page.getByRole("dialog", { name: "Font", exact: true }),
-  ).toBeVisible();
-  await expect(page.locator("#fontFile")).toHaveCount(1);
-  await expect(page.locator("#phonePanel #character")).toHaveCount(0);
-  await expect(page.locator("#phonePanel .library-panel")).toHaveCount(0);
-  await page.getByRole("button", { name: "Close panel" }).click();
+    page.getByRole("dialog", { name: "Character", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Choose font", exact: true }),
+  ).toHaveCount(0);
+  await expect(page.locator("#fontFile")).toHaveCount(0);
   const libraryButton = (await page
     .getByRole("button", { name: "Open library", exact: true })
     .boundingBox())!;
@@ -255,6 +289,8 @@ test("top bar opens character/library and export panels and saves/imports files"
     .click();
   await page.getByRole("button", { name: "Open library" }).click();
   await expect(page.locator(".library-item")).toHaveCount(1);
+  await expect(page.locator("#libraryDialog #chooseFont")).toBeVisible();
+  await expect(page.locator("#libraryDialog #fontFile")).toHaveCount(1);
   const download = page.waitForEvent("download");
   await page.locator("#exportProject").click();
   const backup = await readFile((await (await download).path())!);
@@ -266,7 +302,9 @@ test("top bar opens character/library and export panels and saves/imports files"
   });
   await page.getByRole("button", { name: "Open library" }).click();
   await expect(page.locator(".library-item")).toHaveCount(2);
-  await expect(page.locator("#libraryDialog input[type=file]")).toHaveCount(0);
+  await expect(
+    page.locator("#libraryDialog input[accept='.json']"),
+  ).toHaveCount(0);
   await page.locator(".library-export").first().click();
   const imageExport = page.getByRole("dialog", { name: "Export", exact: true });
   await expect(imageExport.getByRole("radio")).toHaveCount(2);
@@ -287,15 +325,12 @@ test("top bar opens character/library and export panels and saves/imports files"
   await expect(imageExport).toHaveCount(0);
   await page.screenshot({ path: "tmp/phone-character-panel.png" });
   await page.getByRole("button", { name: "Close library" }).click();
-  await page
-    .getByRole("button", { name: "Export and copy", exact: true })
-    .click();
   await expect(
-    page.getByRole("dialog", { name: "Export and copy" }),
-  ).toBeVisible();
-  await expect(page.locator("#exportSvg, #exportPng")).toHaveCount(0);
-  await expect(page.locator("#exportFont")).toBeEnabled();
-  await page.getByRole("button", { name: "Close panel" }).click();
+    page.getByRole("button", { name: "Character settings", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("dialog", { name: "Character settings", exact: true }),
+  ).toHaveCount(0);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollHeight <= innerHeight,
@@ -369,4 +404,59 @@ test("off-center pinch crosses the fitting-axis boundary without teleporting", a
     touchPoints: [],
   });
   expect(Math.abs(after.y - before.y)).toBeLessThan(4);
+});
+
+test("large libraries scroll only characters and keep controls visible", async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    const model = JSON.parse(
+      localStorage.getItem("kanji-maker.draft.v1")!,
+    ).model;
+    localStorage.setItem(
+      "kanji-maker.library.v1",
+      JSON.stringify(
+        Array.from({ length: 40 }, (_, i) => ({
+          id: "saved-" + i,
+          codePoint: 0xe000 + i,
+          model: { ...model, name: "Saved character " + i },
+        })),
+      ),
+    );
+  });
+  await page.reload();
+  await page.getByRole("button", { name: "Open library", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "New composition", exact: true }),
+  ).toHaveCount(0);
+  for (const [width, height] of [
+    [320, 568],
+    [390, 844],
+    [844, 390],
+  ]) {
+    await page.setViewportSize({ width, height });
+    const footer = page.locator(".library-footer");
+    const before = (await footer.boundingBox())!;
+    expect(before.y + before.height).toBeLessThanOrEqual(height);
+    await expect(page.locator("#chooseFont")).toBeVisible();
+    await expect(page.locator("#exportLibraryWord")).toBeVisible();
+    await expect(page.locator("#exportLibraryFont")).toBeVisible();
+    await expect(page.locator("#exportProject")).toBeVisible();
+    expect(
+      await page
+        .locator("#library")
+        .evaluate((list) => list.scrollHeight > list.clientHeight),
+    ).toBe(true);
+    await page.locator("#library").evaluate((list) => {
+      list.scrollTop = list.scrollHeight;
+    });
+    const after = (await footer.boundingBox())!;
+    expect(after.y).toBeCloseTo(before.y);
+    await expect(
+      page.getByRole("button", {
+        name: "Open Saved character 39",
+        exact: true,
+      }),
+    ).toBeInViewport();
+  }
 });

@@ -62,7 +62,12 @@ body:has(.composer-page) {
   height: 38px;
   padding: 0;
 }
-.composer-header-actions .composer-edit {
+.composer-header > .composer-edit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  height: 38px;
   width: auto;
   padding: 0 12px;
   gap: 6px;
@@ -84,7 +89,8 @@ body:has(.composer-page) {
 .component-mode button,
 .composer-guides,
 .composer-preview-button,
-.composer-history button {
+.composer-add,
+.composer-settings {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -310,13 +316,6 @@ main.composer-workspace {
   font-size: 10px;
   color: #6f8274;
 }
-.composer-bottom > button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40px;
-  padding: 6px 10px;
-}
 .composer-dialog .radical-grid {
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
@@ -329,8 +328,24 @@ main.composer-workspace {
   font-size: 16px;
 }
 .composer-page[data-compact="true"] .composer-header {
-  gap: 8px;
+  gap: 6px;
   padding: calc(6px + env(safe-area-inset-top)) 8px 6px;
+}
+.composer-page[data-compact="true"] .composer-header > .composer-edit {
+  padding: 0 7px;
+  gap: 4px;
+}
+.composer-page[data-compact="true"]
+  .composer-header
+  .history-controls
+  > button {
+  width: 30px;
+}
+.composer-page[data-compact="true"] .composer-header-actions {
+  gap: 2px;
+}
+.composer-page[data-compact="true"] .composer-header-actions > button {
+  width: 32px;
 }
 .composer-page[data-compact="true"] .composer-header h1 {
   display: none;
@@ -362,19 +377,6 @@ body:has(.composer-page) #status {
   }
 }
 
-.composition-name {
-  font-weight: 650;
-  margin-bottom: 18px;
-}
-.composition-name input {
-  font-weight: 400;
-}
-.composer-history {
-  display: flex;
-  gap: 3px;
-  padding-right: 8px;
-  border-right: 1px solid var(--border);
-}
 .radical-group {
   margin-top: 15px;
 }

@@ -3,7 +3,7 @@ import type { Editor } from "../../hooks/useEditor";
 import type { LibraryEntry } from "../../types";
 import { useCompactLayout } from "../../hooks/useCompactLayout";
 import { useComposition } from "../../hooks/useComposition";
-import { createPart, emptyComposition } from "../../lib/composition";
+import { createPart } from "../../lib/composition";
 import {
   compositionFromGlyph,
   compositionModel,
@@ -16,6 +16,8 @@ import { ComposerDialog } from "./ComposerDialog";
 import { LibraryDialog } from "../LibraryDialog";
 import { CompositionPreview } from "./CompositionPreview";
 import { Icon } from "../Icon";
+import { HistoryControls } from "../HistoryControls";
+import { ImportButton } from "../ImportButton";
 import "../../composer.css";
 
 type Sheet = "add" | "settings" | "library" | "preview";
@@ -113,7 +115,29 @@ export function ComposerPage({ editor: e }: { editor: Editor }) {
   return (
     <div className="composer-page" data-compact={compact}>
       <header className="composer-header">
+        <button
+          className="primary composer-edit"
+          aria-busy={busy}
+          disabled={busy || c.gesturing}
+          onClick={() => void edit()}
+          aria-label="Open composition in character editor"
+        >
+          {busy ? "…" : "Editor"}
+          <Icon name="draw" width="18" height="18" />
+        </button>
         <h1>Radicals &amp; strokes</h1>
+        <HistoryControls
+          canUndo={!!c.past.length}
+          canRedo={!!c.future.length}
+          canClear={!!c.document.parts.length}
+          disabled={busy || e.busy || c.gesturing}
+          onUndo={c.undo}
+          onRedo={c.redo}
+          onClear={() => {
+            c.clear();
+            setCrop(false);
+          }}
+        />
         <div className="composer-header-actions">
           <button
             aria-label="Open composition library"
@@ -131,16 +155,11 @@ export function ComposerPage({ editor: e }: { editor: Editor }) {
           >
             <Icon name="save" />
           </button>
-          <button
-            className="primary composer-edit"
-            aria-busy={busy}
-            disabled={busy || c.gesturing}
-            onClick={() => void edit()}
-            aria-label="Open composition in character editor"
-          >
-            {busy ? "…" : "Editor"}
-            <Icon name="draw" width="18" height="18" />
-          </button>
+          <ImportButton
+            id="compositionImportFile"
+            disabled={busy || e.busy || c.gesturing}
+            onImport={e.importFile}
+          />
         </div>
       </header>
       <div
@@ -148,24 +167,16 @@ export function ComposerPage({ editor: e }: { editor: Editor }) {
         role="toolbar"
         aria-label="Composition tools"
       >
-        <div className="composer-history">
+        {compact && (
           <button
-            aria-label="Undo composition"
-            title="Undo"
-            disabled={!c.past.length || c.gesturing || busy}
-            onClick={c.undo}
+            className="primary composer-add"
+            aria-label="Add radical or stroke"
+            title="Add radical or stroke"
+            onClick={() => setSheet("add")}
           >
-            <Icon name="undo" width="18" height="18" />
+            <Icon name="add" width="20" height="20" />
           </button>
-          <button
-            aria-label="Redo composition"
-            title="Redo"
-            disabled={!c.future.length || c.gesturing || busy}
-            onClick={c.redo}
-          >
-            <Icon name="redo" width="18" height="18" />
-          </button>
-        </div>
+        )}
         <div className="component-mode">
           <button
             aria-label="Move and resize components"
@@ -206,6 +217,16 @@ export function ComposerPage({ editor: e }: { editor: Editor }) {
           <Icon name="preview" width="18" height="18" />
           <span className="composer-tool-label">Preview</span>
         </button>
+        {compact && (
+          <button
+            className="composer-settings"
+            aria-label="Component settings"
+            title="Component settings"
+            onClick={() => setSheet("settings")}
+          >
+            <Icon name="settings" width="20" height="20" />
+          </button>
+        )}
       </div>
       <main
         className="composer-workspace"
@@ -224,15 +245,6 @@ export function ComposerPage({ editor: e }: { editor: Editor }) {
         )}
       </main>
       <div className="composer-bottom">
-        {compact && (
-          <button
-            className="primary"
-            onClick={() => setSheet("add")}
-            aria-label="Add radical or stroke"
-          >
-            + Add
-          </button>
-        )}
         <div className="composer-layers" role="group" aria-label="Components">
           {c.document.parts.map((part, i) => (
             <button
@@ -248,14 +260,6 @@ export function ComposerPage({ editor: e }: { editor: Editor }) {
             </button>
           ))}
         </div>
-        {compact && (
-          <button
-            aria-label="Component settings"
-            onClick={() => setSheet("settings")}
-          >
-            <Icon name="points" />
-          </button>
-        )}
       </div>
       {sheet === "library" && (
         <LibraryDialog
@@ -263,11 +267,6 @@ export function ComposerPage({ editor: e }: { editor: Editor }) {
           busy={busy || c.gesturing}
           current={c.document.libraryId}
           onOpen={(entry) => void open(entry)}
-          onNew={() => {
-            c.openDocument(emptyComposition());
-            setCrop(false);
-            setSheet(null);
-          }}
           onClose={() => setSheet(null)}
         />
       )}

@@ -10,14 +10,12 @@ export function LibraryDialog({
   busy = false,
   current,
   onOpen,
-  onNew,
   onClose,
 }: {
   editor: Editor;
   busy?: boolean;
   current?: string;
   onOpen?: (entry: LibraryEntry) => void;
-  onNew?: () => void;
   onClose: () => void;
 }) {
   const compact = useCompactLayout();
@@ -49,7 +47,6 @@ export function LibraryDialog({
           setFormat("svg");
           setExportEntry(entry);
         }}
-        onNew={onNew}
       />
       {exportEntry && (
         <PanelDialog

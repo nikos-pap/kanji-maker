@@ -1,7 +1,6 @@
 import type { Editor } from "../hooks/useEditor";
 import { useCanvasView } from "../hooks/useCanvasView";
 import { CharacterForm } from "./CharacterForm";
-import { FontPicker } from "./FontPicker";
 import { EditorToolbar } from "./EditorToolbar";
 import { EditorCanvas } from "./EditorCanvas";
 
@@ -11,7 +10,6 @@ export function EditorWorkspace({ editor }: { editor: Editor }) {
     <section className="workspace" aria-label="Character editor">
       <div className="source-controls">
         <CharacterForm editor={editor} />
-        <FontPicker editor={editor} />
       </div>
       <EditorToolbar
         editor={editor}

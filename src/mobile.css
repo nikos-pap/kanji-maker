@@ -39,16 +39,29 @@ body:has(.phone-screen) {
 .phone-screen button {
   touch-action: manipulation;
 }
-.phone-topbar .phone-character {
-  width: 48px;
-  gap: 2px;
-  border-color: var(--border);
-  background: #f5f8f1;
+.phone-topbar .compact-character {
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  gap: 6px;
+  padding: 0;
+  margin: 0;
 }
-.phone-character span {
-  font: 27px/1 serif;
+.phone-topbar .compact-character #character {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  padding: 3px;
+  margin: 0;
+  font: 24px/1 serif;
 }
-.phone-history,
+.phone-topbar .compact-character #loadCharacter {
+  flex: none;
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  border-color: var(--accent);
+}
 .phone-file-actions {
   display: flex;
   align-items: center;
@@ -227,15 +240,8 @@ dialog.phone-sheet {
   font-size: 16px;
 }
 .phone-sheet .library-panel h2,
-.phone-sheet .export-panel h2 {
+.phone-sheet .character-panel h2 {
   font-size: 14px;
-}
-.phone-sheet-secondary {
-  display: flex;
-  justify-content: space-between;
-  border-top: 1px solid var(--border);
-  margin-top: 16px;
-  padding-top: 12px;
 }
 body:has(.phone-screen) #status {
   bottom: calc(78px + env(safe-area-inset-bottom));
@@ -246,21 +252,20 @@ body:has(.phone-screen) #status {
   position: absolute;
   bottom: calc(12px + env(safe-area-inset-bottom));
   left: 12px;
-  right: 72px;
-  max-width: 340px;
+  right: 64px;
   display: flex;
   align-items: center;
   gap: 8px;
   z-index: 3;
 }
-.phone-view-actions button,
+.phone-view-actions > button,
 .phone-tools-toggle {
   width: 44px;
   min-width: 44px;
   height: 48px;
   border-radius: 14px;
 }
-.phone-view-actions button {
+.phone-view-actions > button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -293,8 +298,17 @@ body:has(.phone-screen) #status {
   box-shadow: 0 2px 8px #18322412;
   color: var(--accent);
 }
-.phone-brush-size > svg {
+.phone-brush-reset {
   flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  color: inherit;
+  background: transparent;
 }
 .phone-brush-size input {
   flex: 1;
@@ -323,10 +337,6 @@ body:has(.phone-screen) #status {
 .phone-screen textarea {
   -webkit-user-select: text;
   user-select: text;
-}
-.phone-sheet .font-picker {
-  flex-direction: column;
-  align-items: stretch;
 }
 @media (max-height: 560px) {
   .phone-tool-palette {

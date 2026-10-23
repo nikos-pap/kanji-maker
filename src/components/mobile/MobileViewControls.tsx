@@ -23,8 +23,20 @@ export function MobileViewControls({ editor: e, zoom, onZoom, onFit }: Props) {
       >
         <Icon name="guides" width="20" height="20" />
       </button>
-      <label className="phone-brush-size">
-        <Icon name={e.brushShape} width="18" height="18" />
+      <div
+        className="phone-brush-size"
+        role="group"
+        aria-label="Brush size controls"
+      >
+        <button
+          className="phone-brush-reset"
+          aria-label="Reset brush size to 45"
+          title="Reset brush size to 45"
+          disabled={e.busy || !["draw", "erase", "line"].includes(e.tool)}
+          onClick={() => e.setBrush(45)}
+        >
+          <Icon name={e.brushShape} width="18" height="18" />
+        </button>
         <input
           aria-label="Brush size"
           type="range"
@@ -36,7 +48,7 @@ export function MobileViewControls({ editor: e, zoom, onZoom, onFit }: Props) {
           onChange={(event) => e.setBrush(event.currentTarget.valueAsNumber)}
         />
         <output aria-hidden="true">{e.brush}</output>
-      </label>
+      </div>
       <DragAdjustButton
         label="Fit canvas / Zoom"
         icon="fit"

@@ -20,6 +20,7 @@ import {
   shiftedOutline,
 } from "../lib/geometry";
 import { Glyph } from "./Glyph";
+import { BrushCursor } from "./BrushCursor";
 import { OutlineOverlay } from "./OutlineOverlay";
 import { advancePinch, canvasViewport, zoomCamera } from "../lib/viewport";
 import type { PinchState, ViewportSize } from "../lib/viewport";
@@ -344,6 +345,11 @@ export function EditorCanvas(props: Props) {
       start: position(e),
       previous: clone(model),
     };
+    if (
+      ["erase", "draw", "line"].includes(tool) &&
+      (e.pointerType !== "touch" || tool === "erase")
+    )
+      setCursor(position(e));
     publish({
       ...model,
       operations: [
@@ -410,7 +416,8 @@ export function EditorCanvas(props: Props) {
     setCursor(
       ["erase", "draw", "line"].includes(tool) &&
         !spaceHeld.current &&
-        e.pointerType !== "touch" &&
+        (e.pointerType !== "touch" ||
+          (tool === "erase" && current?.type === "stroke")) &&
         hover.every((n) => n >= 0 && n <= 1000)
         ? position(e)
         : null,
@@ -446,6 +453,7 @@ export function EditorCanvas(props: Props) {
   function endPointer(e: ReactPointerEvent<SVGSVGElement>, cancel: boolean) {
     touches.current.delete(e.pointerId);
     finish(e.pointerId, cancel);
+    if (e.pointerType === "touch" || cancel) setCursor(null);
     if (!touches.current.size) pinch.current = null;
   }
   const cut =
@@ -598,24 +606,10 @@ export function EditorCanvas(props: Props) {
                 height={Math.abs(cutEnd[1] - cut.points[0][1])}
               />
             )}
-            <g id="pointerOverlay" pointerEvents="none">
-              {cursor &&
-                (brushShape === "square" ? (
-                  <rect
-                    id="brushCursor"
-                    x={cursor[0] - brush / 2}
-                    y={cursor[1] - brush / 2}
-                    width={brush}
-                    height={brush}
-                  />
-                ) : (
-                  <circle
-                    id="brushCursor"
-                    cx={cursor[0]}
-                    cy={cursor[1]}
-                    r={brush / 2}
-                  />
-                ))}
+            <g id="pointerOverlay" data-cursor-tool={tool} pointerEvents="none">
+              {cursor && (
+                <BrushCursor point={cursor} size={brush} shape={brushShape} />
+              )}
             </g>
           </svg>
         </div>
