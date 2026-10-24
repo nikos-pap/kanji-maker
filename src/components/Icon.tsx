@@ -19,6 +19,7 @@ export type IconName =
   | "add"
   | "settings"
   | "load"
+  | "help"
   | "save"
   | "import"
   | "export"
@@ -28,6 +29,7 @@ export type IconName =
   | "zoom"
   | "chevron";
 const paths: Record<Exclude<IconName, "round" | "square">, string> = {
+  help: "M12 16h.01M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2-3 4M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z",
   add: "M12 5v14M5 12h14",
   load: "M5 12h14m-5-5 5 5-5 5",
   settings:

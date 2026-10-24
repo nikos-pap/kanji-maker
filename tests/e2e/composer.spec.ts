@@ -156,7 +156,13 @@ test("adds radicals and strokes, moves/resizes/crops parts and opens the result 
     .getByRole("button", { name: "Open composition in character editor" })
     .click();
   await expect(page).toHaveURL(/#editor$/);
-  await expect(page.locator("#glyphName")).toHaveValue("Radical composition");
+  expect(
+    (
+      await page.evaluate(() =>
+        JSON.parse(localStorage.getItem("kanji-maker.draft.v1")!),
+      )
+    ).model.name,
+  ).toBe("Radical composition");
   await expect(page.locator("#saveGlyph")).toBeEnabled();
   await page.getByRole("link", { name: "Radicals & strokes" }).click();
   await expect(page.locator("[data-component]")).toHaveCount(2);

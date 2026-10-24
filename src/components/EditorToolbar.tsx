@@ -1,7 +1,7 @@
 import { clamp } from "../lib/geometry";
 import { tools } from "../lib/tools";
 import type { Editor } from "../hooks/useEditor";
-import { ZoomControls } from "./ZoomControls";
+import { Icon } from "./Icon";
 
 type ToolbarState = Pick<
   Editor,
@@ -17,30 +17,28 @@ type ToolbarState = Pick<
 >;
 type Props = {
   editor: ToolbarState;
-  zoom: number;
-  onZoom: (zoom: number) => void;
-  onFit: () => void;
+  onPreview: () => void;
 };
-export function EditorToolbar({ editor: e, zoom, onZoom, onFit }: Props) {
+export function EditorToolbar({ editor: e, onPreview }: Props) {
   const brushDisabled = !["erase", "draw", "line"].includes(e.tool) || e.busy;
   return (
-    <div className="editor-toolbar">
-      <div className="tools-row">
-        <div className="tool-group" role="group" aria-label="Drawing tool">
-          {tools.map((t) => (
-            <button
-              key={t.value}
-              type="button"
-              data-tool={t.value}
-              aria-pressed={e.tool === t.value}
-              title={`${t.hint} (${t.key})`}
-              disabled={e.busy}
-              onClick={() => e.selectTool(t.value)}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+    <div className="editor-toolbar" role="toolbar" aria-label="Drawing tools">
+      <div className="tool-group" role="group" aria-label="Drawing tool">
+        {tools.map((t) => (
+          <button
+            key={t.value}
+            type="button"
+            data-tool={t.value}
+            aria-label={t.label}
+            aria-pressed={e.tool === t.value}
+            title={`${t.hint} (${t.key})`}
+            disabled={e.busy}
+            onClick={() => e.selectTool(t.value)}
+          >
+            <Icon name={t.value} width="20" height="20" />
+            <span className="desktop-tool-label">{t.label}</span>
+          </button>
+        ))}
       </div>
       <div className="tool-options" role="group" aria-label="Tool settings">
         <div className="brush-shapes" role="group" aria-label="Brush shape">
@@ -49,22 +47,25 @@ export function EditorToolbar({ editor: e, zoom, onZoom, onFit }: Props) {
               key={shape}
               type="button"
               data-brush-shape={shape}
+              aria-label={shape === "round" ? "Round brush" : "Square brush"}
               aria-pressed={e.brushShape === shape}
               disabled={e.busy}
               title={`${shape === "round" ? "Round" : "Square"} brush for Draw, Erase and Line`}
               onClick={() => e.setBrushShape(shape)}
             >
-              {shape === "round" ? "Round" : "Square"}
+              <Icon name={shape} width="18" height="18" />
             </button>
           ))}
         </div>
         <label className="size-control">
-          Size
+          <span className="desktop-control-label">Size</span>
           <input
             id="brushSize"
             type="range"
             min="1"
             max="160"
+            step="0.5"
+            aria-label="Brush size"
             value={e.brush}
             disabled={brushDisabled}
             onChange={(event) => e.setBrush(Number(event.currentTarget.value))}
@@ -93,7 +94,7 @@ export function EditorToolbar({ editor: e, zoom, onZoom, onFit }: Props) {
           disabled={brushDisabled}
           onClick={() => e.setBrush(45)}
         >
-          Reset size
+          <Icon name="undo" width="18" height="18" />
         </button>
         <label className="guides-control">
           <input
@@ -104,12 +105,16 @@ export function EditorToolbar({ editor: e, zoom, onZoom, onFit }: Props) {
           />
           Guides
         </label>
-        <ZoomControls
-          zoom={zoom}
-          onZoom={onZoom}
-          onFit={onFit}
+        <button
+          id="previewCharacter"
+          aria-label="Preview character"
+          title="Preview character"
           disabled={e.busy}
-        />
+          onClick={onPreview}
+        >
+          <Icon name="preview" width="20" height="20" />
+          <span className="desktop-tool-label">Preview</span>
+        </button>
       </div>
     </div>
   );

@@ -24,6 +24,17 @@ const draft = (page: Page) =>
     JSON.parse(localStorage.getItem("kanji-maker.draft.v1")!),
   );
 
+async function renameCharacter(page: Page, name: string) {
+  await page
+    .getByRole("button", { name: "Preview character", exact: true })
+    .click();
+  await page.getByText("Character details and copy", { exact: true }).click();
+  await page.locator("#glyphName").fill(name);
+  await page
+    .getByRole("button", { name: "Close preview", exact: true })
+    .click();
+}
+
 test("drawing, undo, redo, visible area cuts, points and zoom", async ({
   page,
 }) => {
@@ -116,7 +127,7 @@ test("drawing, undo, redo, visible area cuts, points and zoom", async ({
 test("library survives reload and exports JSON, SVG, PNG, font and Word", async ({
   page,
 }) => {
-  await page.locator("#glyphName").fill("React library test");
+  await renameCharacter(page, "React library test");
   await page.locator("#saveGlyph").click();
   await page.getByRole("button", { name: "Library", exact: true }).click();
   await expect(page.locator("#library .library-item")).toHaveCount(1);
@@ -126,7 +137,7 @@ test("library survives reload and exports JSON, SVG, PNG, font and Word", async 
   expect(stored[0].codePoint).toBe(0xe000);
   await page.reload();
   await expect(page.locator("#saveGlyph")).toBeEnabled();
-  await page.locator("#glyphName").fill("Unsaved different name");
+  await renameCharacter(page, "Unsaved different name");
   await page.getByRole("button", { name: "Library", exact: true }).click();
   await expect(page.locator("#exportLibraryFont")).toBeEnabled();
   for (const kind of ["SVG", "PNG"]) {
@@ -242,4 +253,57 @@ test("imports compatible backups with stable codes and loads a selected font", a
   await expect(page.locator("#helpDialog")).toBeVisible();
   await page.getByRole("button", { name: "Got it" }).click();
   await expect(page.locator("#helpDialog")).toHaveCount(0);
+});
+
+test("desktop canvas fills the window and secondary controls stay out of the workspace", async ({
+  page,
+}) => {
+  for (const [width, height] of [
+    [1920, 1080],
+    [1280, 800],
+    [1024, 600],
+    [800, 600],
+  ]) {
+    await page.setViewportSize({ width, height });
+    await expect(page.locator(".desktop-screen")).toBeVisible();
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth <= innerWidth &&
+          document.documentElement.scrollHeight <= innerHeight,
+      ),
+    ).toBe(true);
+    for (const selector of [".desktop-header", ".editor-toolbar"]) {
+      const bar = page.locator(selector);
+      expect(
+        await bar.evaluate(
+          (element) => element.scrollWidth <= element.clientWidth,
+        ),
+      ).toBe(true);
+    }
+    const canvas = (await page.locator("#canvas").boundingBox())!;
+    const print = (await page.locator("#printBounds").boundingBox())!;
+    const zoom = (await page.locator(".desktop-view-controls").boundingBox())!;
+    expect(canvas.width).toBeCloseTo(width);
+    expect(canvas.height).toBeGreaterThan(height - 180);
+    expect(print.y).toBeGreaterThan(canvas.y);
+    expect(print.y + print.height).toBeLessThan(zoom.y);
+    await expect(page.locator(".desktop-main aside")).toHaveCount(0);
+    await expect(page.locator(".desktop-header #character")).toBeVisible();
+    await expect(page.locator(".desktop-header #saveGlyph")).toBeVisible();
+  }
+  await page
+    .getByRole("button", { name: "Preview character", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog", { name: "Preview", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator("#textPreview svg")).toBeVisible();
+  await expect(page.locator("#glyphName")).not.toBeVisible();
+  await page.getByText("Character details and copy", { exact: true }).click();
+  await expect(page.locator("#glyphName")).toBeVisible();
+  await page
+    .getByRole("button", { name: "Close preview", exact: true })
+    .click();
+  await expect(page.locator("#canvas")).toBeVisible();
 });

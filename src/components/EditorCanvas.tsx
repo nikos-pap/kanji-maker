@@ -161,8 +161,11 @@ export function EditorCanvas(props: Props) {
   useEffect(() => {
     const canvas = svg.current!;
     const screen = bounded ? canvas.closest(".phone-screen") : null;
+    const desktop = canvas.closest(".desktop-screen");
     const topbar = screen?.querySelector(".phone-topbar");
-    const controls = screen?.querySelector(".phone-view-actions");
+    const controls =
+      screen?.querySelector(".phone-view-actions") ||
+      desktop?.querySelector(".desktop-view-controls");
     const points = screen?.querySelector(".precision-bar");
     const measure = () => {
       const rect = canvas.getBoundingClientRect();
@@ -182,6 +185,16 @@ export function EditorCanvas(props: Props) {
           y: top,
           width: size.width,
           height: Math.max(1, bottom - top),
+        };
+      } else if (desktop && controls) {
+        size.fit = {
+          x: 24,
+          y: 24,
+          width: Math.max(1, size.width - 48),
+          height: Math.max(
+            1,
+            controls.getBoundingClientRect().top - 12 - rect.top - 24,
+          ),
         };
       }
       setBounds(size);

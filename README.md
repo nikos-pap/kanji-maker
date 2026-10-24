@@ -275,8 +275,17 @@ rectangle while dragging; release to apply, or press Escape to cancel. Brush
 shapes are retained in saved characters, backups and exports. Older backups,
 including existing polygon cuts, remain readable.
 
-On desktop, Guides, brush settings, zoom and Fit are grouped above the canvas. Usage hints
-are available in button tooltips and Help.
+On desktop the canvas fills the window below a compact command bar and tool row.
+Character loading, Undo/Redo/Clear, Library, Save and Import stay in the command
+bar. The tool row contains drawing tools with icons, brush shape and size, Guides
+and Preview. Zoom and Fit sit at the lower edge of the canvas. The printable
+square fits above those controls while zoomed artwork can use the full canvas.
+The page itself does not scroll.
+
+Preview opens on demand; its optional Character details and copy section contains
+naming and clipboard controls. The drawing workspace has no permanent sidebar.
+Narrow desktop windows use icon buttons to keep both toolbars compact. Usage hints
+are available in tooltips and Help.
 
 Wheel zoom follows the pointer. Space+drag or middle mouse drag moves the
 canvas; touch supports pinch zoom. Fit shows the whole character. Only the canvas

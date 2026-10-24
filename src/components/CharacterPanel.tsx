@@ -8,7 +8,6 @@ type CharacterPanelState = Pick<
   | "model"
   | "busy"
   | "changeModel"
-  | "saveGlyph"
   | "setCopyMode"
   | "copyForDocument"
 >;
@@ -28,14 +27,6 @@ export function CharacterPanel({ editor: e }: { editor: CharacterPanelState }) {
           e.changeModel({ ...e.model, name: event.currentTarget.value })
         }
       />
-      <button
-        id="saveGlyph"
-        className="primary full"
-        disabled={e.disabled}
-        onClick={e.saveGlyph}
-      >
-        Save to library
-      </button>
       <div className="copy-document">
         <label htmlFor="copyDocumentMode">Copy as</label>
         <select
